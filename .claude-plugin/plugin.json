@@ -1,0 +1,29 @@
+{
+  "name": "slop-obliterator",
+  "version": "0.1.0",
+  "description": "Kills AI-slop output across UI, prose, and code. Ships a Playwright-backed design auditor that measures the slop instead of guessing at it, an OKLCH design-token generator, offline icon/component search, and skills that force a real design decision at every fork where a model would reach for a default.",
+  "author": {
+    "name": "Josiah Davis"
+  },
+  "license": "MIT",
+  "keywords": [
+    "ui",
+    "ux",
+    "design",
+    "design-system",
+    "accessibility",
+    "playwright",
+    "anti-slop",
+    "code-quality",
+    "writing"
+  ],
+  "mcpServers": {
+    "slop-obliterator": {
+      "command": "node",
+      "args": ["${CLAUDE_PLUGIN_ROOT}/server/dist/index.js"],
+      "env": {
+        "SLOP_ARTIFACT_DIR": "${CLAUDE_PLUGIN_ROOT}/.artifacts"
+      }
+    }
+  }
+}

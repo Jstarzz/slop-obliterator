@@ -1,0 +1,17 @@
+{
+  "name": "slop-obliterator-marketplace",
+  "owner": {
+    "name": "Josiah Davis"
+  },
+  "metadata": {
+    "description": "Anti-slop tooling for AI-generated interfaces, prose, and code.",
+    "version": "0.1.0"
+  },
+  "plugins": [
+    {
+      "name": "slop-obliterator",
+      "source": "./",
+      "description": "Design auditor + taste layer that stops AI from shipping generic UI, prose, and code."
+    }
+  ]
+}

@@ -1,0 +1,11 @@
+{
+  "mcpServers": {
+    "slop-obliterator": {
+      "command": "node",
+      "args": ["C:/dev/mcp/slop-obliterator/server/dist/index.js"],
+      "env": {
+        "SLOP_ARTIFACT_DIR": "C:/dev/mcp/slop-obliterator/.slop-artifacts"
+      }
+    }
+  }
+}

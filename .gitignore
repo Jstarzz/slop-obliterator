@@ -1,0 +1,9 @@
+node_modules/
+dist/
+*.tsbuildinfo
+.artifacts/
+.slop-artifacts/
+*.bak-*
+.DS_Store
+Thumbs.db
+*.log

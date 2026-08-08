@@ -191,27 +191,66 @@ if (-not $SkipClaudeCode) {
 
 # ----------------------------------------------------------------- github
 
-if (-not $SkipGitHub -and (Have 'git')) {
+function Invoke-GitHubStep {
   Step 'Git and GitHub'
+
+  $gitDir = Join-Path $Root '.git'
+
+  # A repo created over a network or virtualised mount can be left holding lock
+  # files and half-renamed temp objects, because the mount allows create and
+  # rename but refuses unlink. The committed history is fine; the debris just
+  # blocks the next command.
+  if (Test-Path $gitDir) {
+    $cleaned = $false
+
+    $locks = @(Get-ChildItem -Path $gitDir -Recurse -Filter '*.lock' -File -ErrorAction SilentlyContinue |
+      Where-Object { $_.Name -in @('index.lock', 'HEAD.lock', 'config.lock', 'maintenance.lock') })
+    foreach ($lock in $locks) {
+      Remove-Item -Force $lock.FullName
+      Info "cleared stale $($lock.Name)"
+      $cleaned = $true
+    }
+
+    $temps = @(Get-ChildItem -Path (Join-Path $gitDir 'objects') -Recurse -Filter 'tmp_obj_*' -File -ErrorAction SilentlyContinue)
+    if ($temps.Count -gt 0) {
+      $temps | Remove-Item -Force
+      Info "removed $($temps.Count) orphaned temp objects"
+      $cleaned = $true
+    }
+
+    $quarantine = Join-Path $gitDir '.sandbox-debris'
+    if (Test-Path $quarantine) {
+      Remove-Item -Recurse -Force $quarantine
+      Info 'removed quarantined debris'
+      $cleaned = $true
+    }
+
+    if ($cleaned) { Ok 'repository debris cleaned' }
+  }
 
   Push-Location $Root
   try {
-    if (-not (Test-Path (Join-Path $Root '.git'))) {
+    if (-not (Test-Path $gitDir)) {
       git init -b main | Out-Null
       Ok 'initialised repository'
     }
 
+    git fsck --no-progress --connectivity-only 2>&1 | Out-Null
+    if ($LASTEXITCODE -ne 0) { Warn 'git fsck reported problems — inspect before pushing.' }
+    else { Ok 'object database is intact' }
+
     git add -A
-    $staged = git diff --cached --name-only
-    if ($staged) {
-      git commit -m "chore: setup" | Out-Null
+    if ($LASTEXITCODE -ne 0) { Warn 'git add failed.'; return }
+
+    if (git diff --cached --name-only) {
+      git commit -m 'chore: setup' | Out-Null
       Ok 'committed pending changes'
     }
-    else { Info 'nothing to commit' }
+    else { Info 'working tree already committed' }
 
     if (-not (Have 'gh')) {
       Warn 'GitHub CLI not installed — cannot create the remote.'
-      Info 'Install it (winget install GitHub.cli), run `gh auth login`, then:'
+      Info 'Install it with `winget install GitHub.cli`, run `gh auth login`, then:'
       Info "  gh repo create $RepoName --private --source=. --remote=origin --push"
       return
     }
@@ -224,21 +263,22 @@ if (-not $SkipGitHub -and (Have 'git')) {
     }
     Ok 'gh authenticated'
 
-    $hasOrigin = (git remote) -contains 'origin'
-    if ($hasOrigin) {
-      Info "origin already set to $(git remote get-url origin)"
+    if ((git remote) -contains 'origin') {
+      Info "origin is $(git remote get-url origin)"
       git push -u origin main
       if ($LASTEXITCODE -eq 0) { Ok 'pushed to origin' } else { Warn 'push failed.' }
     }
     else {
       $visibility = if ($Public) { '--public' } else { '--private' }
       gh repo create $RepoName $visibility --source=. --remote=origin --push
-      if ($LASTEXITCODE -eq 0) { Ok "created and pushed $visibility repo '$RepoName'" }
-      else { Warn 'gh repo create failed — the name may already be taken.' }
+      if ($LASTEXITCODE -eq 0) { Ok "created $visibility repo '$RepoName' and pushed main" }
+      else { Warn "gh repo create failed — '$RepoName' may already exist on your account." }
     }
   }
   finally { Pop-Location }
 }
+
+if (-not $SkipGitHub -and (Have 'git')) { Invoke-GitHubStep }
 
 Step 'Done'
 Info 'Restart Claude Desktop, then ask it to audit any page to confirm the tools are live.'

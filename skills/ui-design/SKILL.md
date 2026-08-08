@@ -63,18 +63,26 @@ Work through `references/typography.md`, `references/layout-space.md`, `referenc
 
 Icons: call `icon_find` (Tabler and Lucide, offline, ~7000 icons, consistent 24/2px/currentColor). Never mix icon sets with different stroke weights — that mismatch is visible instantly.
 
-Components: `component_find` searches Uiverse (MIT, ~3000 community CSS/Tailwind elements — excellent for texture and detail) and any shadcn-schema registry. Treat results as raw material to adapt, never as a finished design.
+Components: `component_find` searches three sources. **uiverse** — ~3000 MIT community CSS/Tailwind elements, good for texture and detail you would not think to write. **smoothui** — motion-driven React components built on Motion, for when a layout needs a real interaction rather than another static card. **shadcn** — any shadcn-schema registry, including your own via `SLOP_REGISTRY_URL`.
+
+Treat every result as raw material to rebuild inside your own system. Copying a component wholesale imports someone else's decisions, which is how you end up with a page that is well made and still belongs to nobody.
+
+References beat invention. Before designing a screen type you have not built before, look at real ones — [uizze.com](https://uizze.com) has a free browsable catalogue of real web and iOS screens. Extract the structural decisions (hierarchy, density, control placement, what the empty state does), then rebuild them here. Never copy branding, copy, or exact layout.
 
 ### 4. Look at it
 
 **This step is not optional and it is the reason this skill exists.** You cannot tell whether a design works by reading its source.
 
 ```
-audit_design(file: "/abs/path/index.html", viewport: "desktop")
+audit_design(file: "/abs/path/index.html", viewport: "desktop", design_md: "DESIGN.md")
 audit_responsive(url: "http://localhost:3000", viewports: ["mobile","tablet","desktop"])
 ```
 
-The audit measures the rendered result — palette in OKLCH, type scale, spacing grid, contrast, focus rings, tap targets, form states, motion guards, landmarks — and returns named findings with a fix for each. It costs a few hundred tokens, so run it after every meaningful change.
+89 deterministic rules run against the rendered page — palette in OKLCH, type scale, spacing grid, side-tab borders, icon tiles, eyebrow labels, nested cards, glassmorphism, gradient text, marquees, bounce easing, copy tells, contrast, focus rings, tap targets, form states, motion guards, landmarks. Each finding names the element and the fix. A few hundred tokens, so run it after every meaningful change. `list_rules` shows the full catalogue.
+
+Two scores come back. **Quality** is whether it is well built. **Slop-free** is whether it reads as designed rather than defaulted. They move independently — a page can be flawlessly built and completely anonymous.
+
+Pass `design_md` whenever the project has a design contract. It enables four drift rules that catch fonts, colours, radii, and type sizes outside your own system.
 
 Fix every `BLOCK`. Fix every `MAJOR` or say out loud why you are not. Re-run until clean.
 
@@ -82,7 +90,9 @@ Fix every `BLOCK`. Fix every `MAJOR` or say out loud why you are not. Re-run unt
 
 ### 5. Self-critique before you hand it over
 
-Run `references/critique.md` against your own work. It is eleven questions, and the honest answer to at least one of them is usually "no."
+Load the `critique` skill, or run `references/critique.md` directly. Eleven questions the detector cannot answer, and the honest answer to at least one of them is usually "no."
+
+The failure mode to watch for: **passing every rule and still being anonymous.** Two of the three looks generated design currently converges on — near-black with an acid accent, and broadsheet-with-hairlines — clear the whole detector. Only cream-and-terracotta gets flagged. See the top of `references/directions.md`.
 
 ## Non-negotiables
 
@@ -117,3 +127,5 @@ When the user wants options rather than an implementation, read `references/mock
 | `references/motion.md` | Animation principles plus Motion, anime.js, and CSS recipes |
 | `references/critique.md` | The eleven-question self-review |
 | `references/mockups.md` | Producing multiple design directions |
+
+Related skills: `critique` for a full review pass, `grill` for pinning down an underspecified brief before any of this starts.

@@ -5,7 +5,7 @@
   },
   "metadata": {
     "description": "Anti-slop tooling for AI-generated interfaces, prose, and code.",
-    "version": "0.1.0"
+    "version": "0.2.0"
   },
   "plugins": [
     {

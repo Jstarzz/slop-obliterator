@@ -10,18 +10,25 @@ Every default in this plugin exists to force a decision at a fork where a model 
 
 ## What's in it
 
-**An MCP server** that renders pages in a real browser and measures them, generates colour systems, and searches icon and component libraries.
+**An MCP server** that renders pages in a real browser and measures them against **89 deterministic rules**, generates colour systems, and searches icon and component libraries.
 
-**Four skills** carrying the judgement the server can't:
+**Five skills** carrying the judgement the server can't:
 
 | Skill | Job |
 |---|---|
-| `ui-design` | Aesthetic direction, colour, type, layout, motion, states, mockups, self-critique |
+| `ui-design` | Aesthetic direction, colour, type, layout, motion, states, mockups |
+| `critique` | Full review: 89 rules plus the 11 judgements no detector can make |
 | `grill` | Interrogates a brief until it's specific enough to build without guessing |
 | `write-human` | Strips the measurable tells of generated prose |
 | `code-clean` | Prevents the specific failure modes of generated code |
 
-**Three commands:** `/grill`, `/deslop`, `/mockup`.
+**Four commands:** `/critique`, `/grill`, `/deslop`, `/mockup`.
+
+### Where the patterns come from
+
+The taxonomy draws on [Impeccable's published catalog](https://impeccable.style/slop) (Apache-2.0), [UIZZE's anti-ui-slop skill](https://uizze.com), and [Anthropic's frontend-design skill](https://github.com/anthropics/skills/tree/main/skills/frontend-design). Detection here is an independent implementation against rendered pages — no rule code was copied.
+
+Impeccable is a mature tool in its own right with 23 commands and a CLI; if you want a second opinion in CI, `npx impeccable detect` is worth running alongside this.
 
 ---
 
@@ -95,28 +102,36 @@ Restart the app after editing.
 
 | Tool | What it does |
 |---|---|
-| `audit_design` | Renders a page and returns a score plus named findings with fixes |
+| `audit_design` | Renders a page, runs 89 rules, returns two scores plus named findings with fixes |
 | `audit_responsive` | Same across breakpoints; separates breakpoint bugs from design bugs |
+| `list_rules` | The full catalogue with ids, class, severity, dimension |
 | `capture` | Screenshot to disk. Inline image is opt-in |
 | `design_system` | OKLCH ramps + semantic tokens, WCAG-verified, as CSS and Tailwind v4 `@theme` |
 | `contrast_check` | Ratio + OKLCH ΔL per pair, and the nearest passing shade when one fails |
 | `judge_color` | Flags signature hexes, the indigo/violet band, and chroma too low to be an accent |
 | `icon_find` | ~7000 Tabler + Lucide icons, offline, ranked |
-| `component_find` / `component_fetch` | Uiverse (MIT, ~3000 CSS/Tailwind elements) and any shadcn-schema registry |
+| `component_find` / `component_fetch` | Uiverse, SmoothUI, and any shadcn-schema registry |
 
 ### What the auditor actually measures
 
-Not vibes. Computed styles and real layout boxes, in the rendered page:
+Not vibes. Computed styles, real layout boxes, and parsed stylesheets, in the rendered page. 89 rules across ten dimensions:
 
-- **Colour** — every painted colour converted to OKLCH; signature hexes, indigo/violet accents, blue→purple gradients, palettes with no colour above 0.075 chroma, six unrelated hue families, untinted greys, WCAG AA failures per text/background pair
-- **Type** — default typefaces, single-face hierarchy, weight range under 300, size range under 3×, more than nine sizes, measure over 85 characters, leading under 1.4
-- **Layout** — three equal cards with icons and headings, over 60% centred text, one radius on twelve-plus elements, the 10%-black shadow, horizontal overflow
-- **Space** — proportion of padding/margin/gap values off a 4px grid, total distinct steps
-- **State** — targets under 24px, unlabelled fields, unmarked required fields, no error region, no validation attributes, focus outlines removed with no replacement
-- **Motion** — animation with no `prefers-reduced-motion` rule, perpetual loops, `transition: all`
-- **A11y** — heading count and order, missing alt, missing intrinsic size, landmarks
+- **Colour** (12) — signature hexes, indigo/violet accents, blue→purple gradients, gradient text, radial glow halos, neon-on-dark, cream-by-reflex, grey on colour, timid chroma, hue sprawl, untinted greys, WCAG AA per pair
+- **Type** (17) — overused faces across all three waves, single-family hierarchy, compressed scale, icon tiles above headings, eyebrow labels, oversized hero headlines, italic serif display, crushed and wide tracking, all-caps body, justified text, measure, leading, undersized text
+- **Visual detail & layout** (25) — side-tab accent borders, thick borders on rounded corners, hairline-plus-shadow, glassmorphism, decorative grids, repeating stripes, over-rounded cards, nested cards, three-equal-cards, identical card grids, centred-everything, numbered labels, monotonous and off-grid spacing, cramped padding, text at the viewport edge, crowded headings, horizontal overflow, occluded text, clipped popovers, lopsided columns
+- **Motion** (9) — pulsing status dots, blinking carets, marquees, bounce easing, image hover transforms, layout-property animation, missing reduced-motion guard, perpetual loops, `transition: all`
+- **Copy** (6) — marketing buzzwords, em-dash density above the human range, manufactured-contrast cadence, theater framing, weightless headlines, repeated labels
+- **Imagery** (2) — shape-assembled illustrations, broken or placeholder sources
+- **State & a11y** (14) — focus indicators, 24px targets, form labels, required markers, error regions, validation attributes, content shipped at opacity 0, uncaught script errors, heading order, alt text, intrinsic sizes, landmarks
+- **Design-system drift** (4) — fonts, colours, radii, and type sizes outside your own `DESIGN.md`
 
-Each finding has a stable id (`color.slop-hue`, `layout.three-card-row`) so you can grep for them, suppress them, or track them over time.
+Plus **11 judgement checks** with no detector, covered by `/critique`.
+
+Each finding has a stable id (`visual.side-tab-border`, `type.icon-tile-above-heading`) so you can grep for them, suppress them with `ignore_rules`, or track them over time.
+
+### What it deliberately cannot catch
+
+Generated design in 2026 converges on three looks, and **two of them pass every rule**: near-black with one acid accent, and broadsheet-with-hairlines. Only cream-and-terracotta is detectable. That is why `/critique` exists and why the skill leads with naming a direction rather than with the rule list.
 
 ### Token cost
 
@@ -140,11 +155,17 @@ Published benchmarks put a naive browser MCP at ~114k tokens for a ten-step task
 
 ## Testing
 
-`npm test` runs `selftest.js`: colour primitives, twelve seed × intensity combinations of the design system (24 contrast pairs each), the analyser against a slop fixture and a designed fixture, and icon search. No browser required, so it runs in CI.
+`npm test` runs `selftest.js`. Three things matter in it:
 
-The discrimination assertion is the important one — the slop fixture must score under 40 and the designed fixture over 90. If that gap closes, the auditor has stopped being useful.
+1. **A clean baseline that produces zero findings.** Every rule has to stay silent on a page where nothing is wrong, or the per-rule assertions mean nothing.
+2. **A fixture per rule, proving it fires.** All 89.
+3. **A coverage gate.** The run fails if a rule exists without a fixture, so the suite cannot silently fall behind the registry.
 
-`npm run smoke` renders two real pages through Playwright and asserts the same thing end to end.
+No browser required, so it runs in CI on Node 20 and 22.
+
+`npm run smoke` renders two real pages through Playwright and asserts the collector actually produces those signals from rendered CSS — which fixtures cannot prove. It checks 26 specific rule ids fire on the slop page and stay silent on the designed one.
+
+The designed page in that test deliberately avoids all three current defaults. Using cream-and-terracotta there would have made the test lie.
 
 ---
 

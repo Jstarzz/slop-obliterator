@@ -252,9 +252,46 @@ export function makeShadcnSource(baseUrl = process.env.SLOP_REGISTRY_URL ?? 'htt
   };
 }
 
+/**
+ * SmoothUI publishes a shadcn-schema registry, so it needs no adapter of its
+ * own. Motion-driven components, MIT, and a useful counterweight to the static
+ * card grids everything else produces.
+ */
+function makeSmoothUiSource(): ComponentSource {
+  const base = makeShadcnSource('https://smoothui.dev/r');
+  return {
+    ...base,
+    id: 'smoothui',
+    label: 'SmoothUI (motion-driven React components)',
+    categories: () => ['ui', 'interactive', 'layout', 'utility'],
+    async search(query, category, limit) {
+      const results = await base.search(query, category, limit);
+      return results.map((r) => ({
+        ...r,
+        id: r.id.replace(/^shadcn:/, 'smoothui:'),
+        source: 'smoothui',
+        url: `https://smoothui.dev/doc/${r.name}`,
+      }));
+    },
+    async get(id) {
+      const detail = await base.get(id.replace(/^smoothui:/, 'shadcn:'));
+      return {
+        ...detail,
+        id,
+        source: 'smoothui',
+        url: `https://smoothui.dev/doc/${detail.name}`,
+        attribution: `${detail.name} from SmoothUI by educlopez`,
+      };
+    },
+  };
+}
+
 export function componentSources(): Record<string, ComponentSource> {
-  const shadcn = makeShadcnSource();
-  return { uiverse: uiverseSource, shadcn };
+  return {
+    uiverse: uiverseSource,
+    shadcn: makeShadcnSource(),
+    smoothui: makeSmoothUiSource(),
+  };
 }
 
 function describe(error: unknown): string {

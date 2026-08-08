@@ -17,8 +17,11 @@ import { mkdir, writeFile } from 'node:fs/promises';
 import { join, resolve } from 'node:path';
 import { z } from 'zod';
 
-import { analyze } from './audits/analyze.js';
+import { analyze, type AnalyzeOptions } from './audits/analyze.js';
 import { collectMeasurements } from './audits/collect.js';
+import { loadDesignContract } from './audits/rules/design-contract.js';
+import { RULES } from './audits/rules/registry.js';
+import type { DesignContract } from './audits/rules/types.js';
 import { PlaywrightDriver } from './browser/playwright.js';
 import { VIEWPORTS, resolveViewport, type OpenTarget, type Session } from './browser/driver.js';
 import {
@@ -31,7 +34,7 @@ import {
   round,
 } from './color/oklch.js';
 import { generateSystem } from './color/system.js';
-import { renderReport, renderResponsiveSummary } from './format.js';
+import { LLM_ONLY_CHECKS, renderCritiqueChecklist, renderReport, renderResponsiveSummary } from './format.js';
 import { componentSources } from './sources/components.js';
 import { getIconSvg, installedSetsSummary, searchIcons, type IconSet } from './sources/icons.js';
 
@@ -100,6 +103,41 @@ function text(value: string) {
   return { content: [{ type: 'text' as const, text: value }] };
 }
 
+/** Shared across the audit tools so their schemas stay identical. */
+const auditOptionsShape = {
+  design_md: z
+    .string()
+    .optional()
+    .describe('Path to a DESIGN.md. Enables the four drift rules that flag fonts, colours, radii, and type sizes outside your own system.'),
+  kinds: z
+    .array(z.enum(['slop', 'quality']))
+    .optional()
+    .describe('Report only these classes. "slop" is machine-default tells; "quality" is defects that hurt regardless of author.'),
+  ignore_rules: z.array(z.string()).optional().describe('Rule ids to suppress, e.g. ["color.cream-default"].'),
+};
+
+async function resolveAnalyzeOptions(args: {
+  design_md?: string;
+  kinds?: Array<'slop' | 'quality'>;
+  ignore_rules?: string[];
+}): Promise<AnalyzeOptions> {
+  let design: DesignContract | null = null;
+  if (args.design_md) {
+    try {
+      design = await loadDesignContract(resolve(args.design_md));
+    } catch (error) {
+      throw new Error(
+        `Could not read the design contract at ${args.design_md}: ${error instanceof Error ? error.message : String(error)}`,
+      );
+    }
+  }
+  return {
+    design,
+    kinds: args.kinds,
+    disabled: new Set(args.ignore_rules ?? []),
+  };
+}
+
 function failure(error: unknown) {
   const message = error instanceof Error ? error.message : String(error);
   return { content: [{ type: 'text' as const, text: message }], isError: true };
@@ -110,15 +148,18 @@ function failure(error: unknown) {
 server.registerTool(
   'audit_design',
   {
-    title: 'Audit a rendered page for AI-slop and design defects',
+    title: 'Audit a rendered page against every known AI-slop and quality pattern',
     description:
-      'Renders a page and measures it: palette (signature hexes, indigo/violet accents, blue-purple ' +
-      'gradients, timid chroma, untinted greys), typography (default typefaces, compressed scale, ' +
-      'line measure, leading), layout (the three-equal-cards row, centred-everything, uniform radius ' +
-      'and shadow, horizontal overflow), spacing grid, interaction states (focus rings, 24px targets, ' +
-      'form labels, required markers, error regions, validation), motion (reduced-motion support), and ' +
-      'accessibility (contrast, headings, alt text, landmarks). Returns a score, named findings with ' +
-      'evidence, and a concrete fix for each. Cheap enough to run on every iteration.',
+      `Renders a page and measures it against ${RULES.length} deterministic rules. Catches the tells: ` +
+      'side-tab accent borders, icon tiles above headings, indigo/violet accents, blue-purple and ' +
+      'gradient text, radial glow halos, glassmorphism, decorative grids, cream-default grounds, ' +
+      'nested cards, the three-equal-cards row, eyebrow labels, oversized hero headlines, italic serif ' +
+      'display, overused typefaces, monotonous spacing, pulsing dots, blinking carets, marquees, bounce ' +
+      'easing, image hover transforms, marketing buzzwords, em-dash overuse, manufactured-contrast copy. ' +
+      'Plus quality defects: contrast, focus rings, 24px targets, form labels and error states, line ' +
+      'measure, cramped padding, occluded text, clipped popovers, layout-property animation, heading ' +
+      'order, alt text. Returns two scores (quality and slop-free), named findings with evidence, and a ' +
+      'fix for each. A few hundred tokens, so run it after every meaningful change.',
     inputSchema: {
       ...targetShape,
       viewport: z
@@ -128,22 +169,70 @@ server.registerTool(
       color_scheme: z.enum(['light', 'dark']).default('light'),
       settle_ms: z.number().int().min(0).max(10_000).default(350).describe('Extra wait for fonts and entry animations.'),
       verbose: z.boolean().default(false).describe('Append raw palette/type statistics.'),
+      include_judgement_checks: z
+        .boolean()
+        .default(false)
+        .describe('Append the questions no detector can answer. /critique sets this.'),
+      ...auditOptionsShape,
     },
   },
   async (args) => {
     try {
-      const report = await withSession(
+      const options = await resolveAnalyzeOptions(args);
+      const { report, consoleErrors } = await withSession(
         toTarget(args),
         { viewport: args.viewport, colorScheme: args.color_scheme, settleMs: args.settle_ms },
         async (session) => {
           const raw = await session.evaluate(collectMeasurements);
-          return analyze(raw, args.viewport);
+          const errors = session.consoleErrors().filter((e) => e.type === 'pageerror' || e.type === 'error');
+          raw.consoleErrors = errors.length;
+          return { report: analyze(raw, args.viewport, options), consoleErrors: errors };
         },
       );
-      return text(renderReport(report, { verbose: args.verbose }));
+
+      let body = renderReport(report, { verbose: args.verbose });
+      if (consoleErrors.length > 0) {
+        body += `\n\nConsole:\n${consoleErrors.slice(0, 5).map((e) => `    · [${e.type}] ${e.text}`).join('\n')}`;
+      }
+      if (args.include_judgement_checks) {
+        body += `\n\n${renderCritiqueChecklist()}`;
+      }
+      return text(body);
     } catch (error) {
       return failure(error);
     }
+  },
+);
+
+server.registerTool(
+  'list_rules',
+  {
+    title: 'List every pattern the detector knows',
+    description:
+      'The full rule catalog with ids, class (slop or quality), severity, and dimension. Use it to pick ' +
+      'ids for ignore_rules, or to see what is and is not covered deterministically.',
+    inputSchema: {
+      dimension: z
+        .enum(['color', 'type', 'space', 'layout', 'motion', 'state', 'a11y', 'copy', 'imagery', 'system'])
+        .optional(),
+      kind: z.enum(['slop', 'quality']).optional(),
+      include_fixes: z.boolean().default(false),
+    },
+  },
+  async (args) => {
+    const matching = RULES.filter(
+      (r) => (!args.dimension || r.dimension === args.dimension) && (!args.kind || r.kind === args.kind),
+    );
+    const lines = [
+      `${matching.length} of ${RULES.length} deterministic rules` +
+        `, plus ${LLM_ONLY_CHECKS.length} judgement checks (see /critique).`,
+      '',
+    ];
+    for (const rule of matching) {
+      lines.push(`${rule.id.padEnd(34)} ${rule.kind.padEnd(8)} ${rule.severity.padEnd(8)} ${rule.title}`);
+      if (args.include_fixes) lines.push(`    -> ${rule.fix}`);
+    }
+    return text(lines.join('\n'));
   },
 );
 
@@ -162,18 +251,20 @@ server.registerTool(
         .default(['mobile', 'tablet', 'desktop'])
         .describe(`Any of ${Object.keys(VIEWPORTS).join(', ')} or explicit "WxH" strings.`),
       color_scheme: z.enum(['light', 'dark']).default('light'),
+      ...auditOptionsShape,
     },
   },
   async (args) => {
     try {
       const target = toTarget(args);
+      const options = await resolveAnalyzeOptions(args);
       const reports: Array<{ viewport: string; report: ReturnType<typeof analyze> }> = [];
 
       for (const viewport of args.viewports.slice(0, 6)) {
         const report = await withSession(
           target,
           { viewport, colorScheme: args.color_scheme },
-          async (session) => analyze(await session.evaluate(collectMeasurements), viewport),
+          async (session) => analyze(await session.evaluate(collectMeasurements), viewport, options),
         );
         reports.push({ viewport, report });
       }
@@ -492,12 +583,14 @@ server.registerTool(
     title: 'Search Uiverse and shadcn-schema component registries',
     description:
       'Finds ready-made components. "uiverse" is ~3000 MIT community CSS/Tailwind elements (buttons, ' +
-      'cards, loaders, toggles) — good for texture and detail you would not think to write. "shadcn" ' +
-      'searches any shadcn-schema registry, defaulting to ui.shadcn.com; point SLOP_REGISTRY_URL at an ' +
-      'internal one to search your own. Treat results as raw material, not as a design.',
+      'cards, loaders, toggles) - good for texture and detail you would not think to write. "smoothui" ' +
+      'is motion-driven React components built on Motion, useful when a layout needs a real interaction ' +
+      'rather than another static card. "shadcn" searches any shadcn-schema registry, defaulting to ' +
+      'ui.shadcn.com; point SLOP_REGISTRY_URL at an internal one to search your own. Treat results as ' +
+      'raw material to adapt into your own system, never as a finished design.',
     inputSchema: {
       query: z.string(),
-      source: z.enum(['uiverse', 'shadcn']).default('shadcn'),
+      source: z.enum(['uiverse', 'shadcn', 'smoothui']).default('shadcn'),
       category: z.string().optional().describe('Uiverse only: Buttons, Cards, Inputs, Loaders, Forms, Tooltips, ...'),
       limit: z.number().int().min(1).max(30).default(10),
     },

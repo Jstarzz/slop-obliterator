@@ -8,6 +8,22 @@ Feed the seed into `design_system`. The typefaces listed are all on Google Fonts
 
 ---
 
+## First, the three that are already defaults
+
+Generated design in 2026 converges on three specific looks. All three are legitimate for some briefs. None of them is a *choice* when it shows up regardless of subject, and **two of them pass every rule in the detector** — so nothing will warn you.
+
+1. **Cream + serif + terracotta.** Warm off-white ground near `#F4F1EA`, high-contrast serif display, a single warm accent. This is what a model produces when told to avoid purple. Directions 3 and 8 below sit close to it.
+2. **Near-black + one acid accent.** Dark ground with a single bright green or vermilion. Direction 10 sits close to it.
+3. **Broadsheet.** Hairline rules, zero radius, dense newspaper columns, editorial serif. Directions 4 and 9 sit close to it.
+
+If the brief asked for one of these, use it and say why. If the brief left the axis free, **spend that freedom somewhere else** — the whole point is that this axis is where every model spends it.
+
+The practical test: would you have arrived here from a different brief? If yes, it is a default wearing a costume.
+
+---
+
+---
+
 ## 1. Swiss pharmaceutical
 
 Clinical, precise, expensive-looking.
@@ -138,6 +154,11 @@ Ask two questions:
 2. **Does it need to feel safe, or memorable?** Safe → municipal, Swiss, financial. Memorable → brutalist, riso, nocturne, ski lodge.
 
 Then commit. A confidently wrong direction is fixable in one pass. The average is not fixable at all, because there is nothing there to push against.
+
+Two tiebreakers when several fit:
+
+- **Prefer the one furthest from the three defaults above.** Swiss, terminal, brutalist, riso, municipal, and Japanese print are all a long way from the median. Coastal, editorial, and nocturne are close to it and need more work to escape.
+- **Prefer the one that comes from the subject.** A payroll tool has a genuine relationship to ledgers and terminals. It has no relationship to a ski lodge. Direction borrowed from the subject's own world always beats direction borrowed from a list — including this one.
 
 ## Building your own
 

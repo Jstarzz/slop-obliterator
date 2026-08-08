@@ -38,6 +38,42 @@ jobs:
       - name: Self test
         run: npm test
 
+  # setup.ps1 is parsed by Windows PowerShell 5.1, whose quirks (ANSI decoding
+  # without a BOM, smart quotes acting as string delimiters) are not reproducible
+  # anywhere else. Check it with the parser that actually runs it.
+  script:
+    runs-on: windows-latest
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Parse setup.ps1
+        shell: powershell
+        run: |
+          $errors = $null
+          [System.Management.Automation.Language.Parser]::ParseFile(
+            "$env:GITHUB_WORKSPACE\setup.ps1", [ref]$null, [ref]$errors) | Out-Null
+          if ($errors) {
+            $errors | ForEach-Object { Write-Host $_.Message -ForegroundColor Red }
+            exit 1
+          }
+          Write-Host 'setup.ps1 parses clean'
+
+      - name: Enforce ASCII-only and a UTF-8 BOM
+        shell: powershell
+        run: |
+          $bytes = [System.IO.File]::ReadAllBytes("$env:GITHUB_WORKSPACE\setup.ps1")
+          if ($bytes[0] -ne 0xEF -or $bytes[1] -ne 0xBB -or $bytes[2] -ne 0xBF) {
+            Write-Host 'setup.ps1 is missing its UTF-8 BOM' -ForegroundColor Red
+            exit 1
+          }
+          $offenders = @($bytes[3..($bytes.Length - 1)] | Where-Object { $_ -gt 127 })
+          if ($offenders.Count -gt 0) {
+            Write-Host "setup.ps1 has $($offenders.Count) non-ASCII bytes" -ForegroundColor Red
+            exit 1
+          }
+          Write-Host 'setup.ps1 is ASCII-only with a BOM'
+
   smoke:
     runs-on: ubuntu-latest
     needs: build

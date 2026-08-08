@@ -158,7 +158,14 @@ if (-not $SkipDesktop) {
     $existingNames = @($config.mcpServers.PSObject.Properties.Name)
     $config.mcpServers | Add-Member -NotePropertyName 'slop-obliterator' -NotePropertyValue $entry -Force
 
-    $config | ConvertTo-Json -Depth 12 | Set-Content -Path $configPath -Encoding UTF8
+    # Set-Content -Encoding UTF8 writes a BOM on Windows PowerShell 5.1, which
+    # some JSON parsers reject. Write it without one.
+    $json = $config | ConvertTo-Json -Depth 12
+    [System.IO.File]::WriteAllText($configPath, $json, (New-Object System.Text.UTF8Encoding $false))
+
+    # Read it back before claiming success.
+    try { Get-Content $configPath -Raw | ConvertFrom-Json -ErrorAction Stop | Out-Null }
+    catch { throw "Wrote $configPath but it did not parse as JSON. Restore the .bak file next to it." }
 
     $kept = @($existingNames | Where-Object { $_ -ne 'slop-obliterator' })
     Ok "registered in $configPath"

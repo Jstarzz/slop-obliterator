@@ -14,8 +14,12 @@ const MARK: Record<Severity, string> = {
   minor: 'minor',
 };
 
+const DEFAULT_EVIDENCE_PER_FINDING = 3;
+const VERBOSE_EVIDENCE_PER_FINDING = 6;
+
 export function renderReport(report: AuditReport, options: { verbose?: boolean } = {}): string {
   const lines: string[] = [];
+  const evidenceLimit = options.verbose ? VERBOSE_EVIDENCE_PER_FINDING : DEFAULT_EVIDENCE_PER_FINDING;
 
   lines.push(`# Design audit - quality ${report.score}/100, slop-free ${report.slopScore}/100`);
   lines.push(report.verdict);
@@ -43,18 +47,19 @@ export function renderReport(report: AuditReport, options: { verbose?: boolean }
 
     if (slop.length > 0) {
       lines.push('## Reads as AI-generated');
-      for (const finding of slop) lines.push(renderFinding(finding));
+      for (const finding of slop) lines.push(renderFinding(finding, evidenceLimit));
       lines.push('');
     }
     if (quality.length > 0) {
       lines.push('## Quality defects');
-      for (const finding of quality) lines.push(renderFinding(finding));
+      for (const finding of quality) lines.push(renderFinding(finding, evidenceLimit));
     }
   }
 
   if (report.passed.length > 0) {
     lines.push('');
-    lines.push(`Passed: ${report.passed.join(' ')}`);
+    if (options.verbose) lines.push(`Passed (${report.passed.length}): ${report.passed.join(' ')}`);
+    else lines.push(`Passed: ${report.passed.length} rules. Set verbose=true for ids and expanded evidence.`);
   }
 
   if (options.verbose) {
@@ -72,9 +77,12 @@ export function renderReport(report: AuditReport, options: { verbose?: boolean }
   return lines.join('\n');
 }
 
-function renderFinding(finding: Finding): string {
+function renderFinding(finding: Finding, evidenceLimit: number): string {
   const parts = [`[${MARK[finding.severity]}] ${finding.title}  (${finding.id})`];
-  for (const evidence of finding.evidence.slice(0, 6)) parts.push(`    · ${evidence}`);
+  for (const evidence of finding.evidence.slice(0, evidenceLimit)) parts.push(`    · ${evidence}`);
+  if (finding.evidence.length > evidenceLimit) {
+    parts.push(`    · +${finding.evidence.length - evidenceLimit} more matching element(s)`);
+  }
   parts.push(`    -> ${finding.fix}`);
   return parts.join('\n');
 }

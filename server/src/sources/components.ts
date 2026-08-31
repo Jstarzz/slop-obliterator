@@ -36,7 +36,7 @@ export interface ComponentSource {
   get(id: string): Promise<ComponentDetail>;
 }
 
-const USER_AGENT = 'slop-obliterator/0.1 (+https://github.com/uiverse-io/galaxy)';
+const USER_AGENT = 'slop-obliterator/0.1 (+https://github.com/Jstarzz/slop-obliterator)';
 const CACHE_TTL_MS = 15 * 60 * 1000;
 
 const cache = new Map<string, { at: number; value: unknown }>();
@@ -185,6 +185,7 @@ export const uiverseSource: ComponentSource = {
 interface ShadcnRegistryItem {
   name: string;
   type?: string;
+  title?: string;
   description?: string;
   dependencies?: string[];
   registryDependencies?: string[];
@@ -195,38 +196,198 @@ interface ShadcnSearchResponse {
   items?: ShadcnRegistryItem[];
 }
 
+interface RegistryDescriptor {
+  id: string;
+  label: string;
+  root: string;
+  homepage?: string;
+  license: string;
+  /** False when upstream allows use but prohibits redistributing components. */
+  proxyCode: boolean;
+  installNamespace?: string;
+}
+
+const BUILTIN_REGISTRIES: readonly RegistryDescriptor[] = [
+  {
+    id: 'core',
+    label: 'shadcn/ui',
+    root: 'https://ui.shadcn.com/r',
+    homepage: 'https://ui.shadcn.com',
+    license: 'MIT',
+    proxyCode: true,
+  },
+  {
+    id: 'magicui',
+    label: 'Magic UI',
+    root: 'https://magicui.design/r',
+    homepage: 'https://magicui.design',
+    license: 'MIT',
+    proxyCode: true,
+    installNamespace: '@magicui',
+  },
+  {
+    id: 'kokonutui',
+    label: 'KokonutUI',
+    root: 'https://kokonutui.com/r',
+    homepage: 'https://kokonutui.com',
+    license: 'MIT',
+    proxyCode: true,
+    installNamespace: '@kokonutui',
+  },
+  {
+    id: 'reactbits',
+    label: 'React Bits',
+    root: 'https://reactbits.dev/r',
+    homepage: 'https://reactbits.dev',
+    license: 'MIT + Commons Clause — use is allowed; redistribution of the components themselves is restricted',
+    proxyCode: false,
+    installNamespace: '@react-bits',
+  },
+] as const;
+
+function configuredRegistries(): readonly RegistryDescriptor[] {
+  const custom = process.env.SLOP_REGISTRY_URL?.trim();
+  if (!custom) return BUILTIN_REGISTRIES;
+  return [
+    {
+      id: 'custom',
+      label: `custom shadcn-schema registry (${custom.replace(/\/$/, '')})`,
+      root: custom,
+      license: 'registry-defined — verify before redistributing fetched source',
+      proxyCode: true,
+    },
+  ];
+}
+
+function registryItemScore(item: ShadcnRegistryItem, terms: readonly string[]): number {
+  if (terms.length === 0) return 1;
+  const name = item.name.toLowerCase();
+  const title = (item.title ?? '').toLowerCase();
+  const description = (item.description ?? '').toLowerCase();
+  let score = 0;
+
+  for (const term of terms) {
+    if (name === term) score += 100;
+    else if (name.startsWith(term)) score += 40;
+    else if (name.includes(term)) score += 20;
+    if (title.includes(term)) score += 10;
+    if (description.includes(term)) score += 4;
+  }
+  return score;
+}
+
+function registryResultId(registry: RegistryDescriptor, name: string, totalRegistries: number): string {
+  if (totalRegistries === 1 || registry.id === 'core') return `shadcn:${name}`;
+  return `shadcn:${registry.id}:${name}`;
+}
+
+function registryFromId(
+  id: string,
+  registries: readonly RegistryDescriptor[],
+): { registry: RegistryDescriptor; name: string } {
+  const raw = id.replace(/^shadcn:/, '');
+  const separator = raw.indexOf(':');
+  if (separator > 0) {
+    const registryId = raw.slice(0, separator);
+    const match = registries.find((registry) => registry.id === registryId);
+    if (match) return { registry: match, name: raw.slice(separator + 1) };
+  }
+
+  const fallback = registries.find((registry) => registry.id === 'core') ?? registries[0];
+  if (!fallback) throw new Error('No shadcn-schema registries are configured.');
+  return { registry: fallback, name: raw };
+}
+
+async function searchRegistry(
+  registry: RegistryDescriptor,
+  query: string,
+  category: string | undefined,
+  limit: number,
+  totalRegistries: number,
+): Promise<ComponentSummary[]> {
+  const root = registry.root.replace(/\/$/, '');
+  // Some registries implement q/limit server-side; others ignore them and return
+  // the full index. Always rank/filter locally so behavior is consistent.
+  const url = `${root}/registry.json?q=${encodeURIComponent(query)}&limit=${Math.max(limit, 20)}`;
+  const payload = await cached(`shadcn:index:${url}`, () =>
+    fetchJson<ShadcnSearchResponse | ShadcnRegistryItem[]>(url),
+  );
+  const items = Array.isArray(payload) ? payload : (payload.items ?? []);
+  const terms = query.toLowerCase().split(/[\s,]+/).filter(Boolean);
+
+  return items
+    .map((item) => ({ item, score: registryItemScore(item, terms) }))
+    .filter(({ item, score }) => {
+      if (score <= 0) return false;
+      if (!category) return true;
+      return item.type?.replace(/^registry:/, '').toLowerCase() === category.toLowerCase();
+    })
+    .sort((a, b) => b.score - a.score || a.item.name.localeCompare(b.item.name))
+    .slice(0, limit)
+    .map(({ item }) => ({
+      id: registryResultId(registry, item.name, totalRegistries),
+      name: item.name,
+      source: `shadcn/${registry.id}`,
+      category: [registry.id, item.type?.replace(/^registry:/, '')].filter(Boolean).join('/'),
+      url: registry.homepage,
+    }));
+}
+
 /**
- * Works against any registry that follows the shadcn schema, not just the
- * canonical one. Point SLOP_REGISTRY_URL at an internal registry to search a
- * team's own components with the same tool.
+ * Searches a small built-in directory of shadcn-schema registries by default:
+ * shadcn/ui, Magic UI, KokonutUI, and React Bits. Point SLOP_REGISTRY_URL at an
+ * internal registry to preserve the old single-registry behavior.
+ *
+ * React Bits is searchable but intentionally not proxied by component_fetch:
+ * its current MIT + Commons Clause terms allow use but restrict redistribution
+ * of the component library itself. Agents should install it from upstream.
  */
-export function makeShadcnSource(baseUrl = process.env.SLOP_REGISTRY_URL ?? 'https://ui.shadcn.com/r'): ComponentSource {
-  const root = baseUrl.replace(/\/$/, '');
+export function makeShadcnSource(): ComponentSource {
+  const registries = configuredRegistries();
 
   return {
     id: 'shadcn',
-    label: `shadcn-schema registry (${root})`,
-    license: 'MIT',
+    label:
+      registries.length === 1
+        ? registries[0]!.label
+        : `shadcn-schema directory (${registries.map((registry) => registry.label).join(', ')})`,
+    license: 'Per registry; component_fetch reports the source license.',
 
-    categories: () => ['ui', 'block', 'component', 'hook'],
+    categories: () => ['ui', 'block', 'component', 'hook', 'style'],
 
-    async search(query, _category, limit) {
-      const url = `${root}/registry.json?q=${encodeURIComponent(query)}&limit=${limit}`;
-      const payload = await cached(`shadcn:${url}`, () => fetchJson<ShadcnSearchResponse | ShadcnRegistryItem[]>(url));
-      const items = Array.isArray(payload) ? payload : (payload.items ?? []);
+    async search(query, category, limit) {
+      const settled = await Promise.allSettled(
+        registries.map((registry) => searchRegistry(registry, query, category, limit, registries.length)),
+      );
+      const results = settled.flatMap((result) => (result.status === 'fulfilled' ? result.value : []));
 
-      return items.slice(0, limit).map((item) => ({
-        id: `shadcn:${item.name}`,
-        name: item.name,
-        source: 'shadcn',
-        category: item.type?.replace(/^registry:/, ''),
-        url: root.includes('ui.shadcn.com') ? `https://ui.shadcn.com/docs/components/${item.name}` : undefined,
-      }));
+      if (results.length === 0) {
+        const failures = settled
+          .filter((result): result is PromiseRejectedResult => result.status === 'rejected')
+          .map((result) => describe(result.reason));
+        if (failures.length === settled.length && failures.length > 0) {
+          throw new Error(`Every shadcn-schema registry failed: ${failures.join(' | ')}`);
+        }
+      }
+
+      return results.slice(0, limit);
     },
 
     async get(id) {
-      const name = id.replace(/^shadcn:/, '');
-      const item = await cached(`shadcn:item:${name}`, () =>
+      const { registry, name } = registryFromId(id, registries);
+      const root = registry.root.replace(/\/$/, '');
+
+      if (!registry.proxyCode) {
+        const install = registry.installNamespace
+          ? `npx shadcn@latest add ${registry.installNamespace}/${name}`
+          : `${root}/${encodeURIComponent(name)}.json`;
+        throw new Error(
+          `${registry.label} is searchable here, but slop-obliterator will not proxy its component source. ` +
+            `${registry.license}. Fetch/install it directly from upstream instead: ${install}`,
+        );
+      }
+
+      const item = await cached(`shadcn:item:${registry.id}:${name}`, () =>
         fetchJson<ShadcnRegistryItem>(`${root}/${encodeURIComponent(name)}.json`),
       );
 
@@ -240,47 +401,68 @@ export function makeShadcnSource(baseUrl = process.env.SLOP_REGISTRY_URL ?? 'htt
       return {
         id,
         name: item.name,
-        source: 'shadcn',
+        source: `shadcn/${registry.id}`,
         category: item.type?.replace(/^registry:/, ''),
         language: 'tsx',
         code: code || JSON.stringify(item, null, 2),
         dependencies: [...(item.dependencies ?? []), ...(item.registryDependencies ?? [])],
-        license: 'MIT',
-        url: root.includes('ui.shadcn.com') ? `https://ui.shadcn.com/docs/components/${item.name}` : undefined,
+        license: registry.license,
+        url: registry.homepage,
+        attribution: registry.id === 'core' ? undefined : `${item.name} from ${registry.label}`,
       };
     },
   };
 }
 
 /**
- * SmoothUI publishes a shadcn-schema registry, so it needs no adapter of its
- * own. Motion-driven components, MIT, and a useful counterweight to the static
- * card grids everything else produces.
+ * SmoothUI publishes a shadcn-schema registry, but it remains its own source so
+ * callers can explicitly ask for motion-driven interaction rather than search
+ * the broader registry directory.
  */
 function makeSmoothUiSource(): ComponentSource {
-  const base = makeShadcnSource('https://smoothui.dev/r');
+  const registry: RegistryDescriptor = {
+    id: 'smoothui',
+    label: 'SmoothUI',
+    root: 'https://smoothui.dev/r',
+    homepage: 'https://smoothui.dev',
+    license: 'MIT',
+    proxyCode: true,
+  };
+
   return {
-    ...base,
     id: 'smoothui',
     label: 'SmoothUI (motion-driven React components)',
+    license: 'MIT',
     categories: () => ['ui', 'interactive', 'layout', 'utility'],
     async search(query, category, limit) {
-      const results = await base.search(query, category, limit);
-      return results.map((r) => ({
-        ...r,
-        id: r.id.replace(/^shadcn:/, 'smoothui:'),
+      const results = await searchRegistry(registry, query, category, limit, 1);
+      return results.map((result) => ({
+        ...result,
+        id: result.id.replace(/^shadcn:/, 'smoothui:'),
         source: 'smoothui',
-        url: `https://smoothui.dev/doc/${r.name}`,
+        url: `https://smoothui.dev/doc/${result.name}`,
       }));
     },
     async get(id) {
-      const detail = await base.get(id.replace(/^smoothui:/, 'shadcn:'));
+      const name = id.replace(/^smoothui:/, '');
+      const root = registry.root.replace(/\/$/, '');
+      const item = await cached(`smoothui:item:${name}`, () =>
+        fetchJson<ShadcnRegistryItem>(`${root}/${encodeURIComponent(name)}.json`),
+      );
+      const code = (item.files ?? [])
+        .map((file) => `${file.path ? `// ${file.path}\n` : ''}${file.content ?? ''}`)
+        .join('\n\n');
       return {
-        ...detail,
         id,
+        name: item.name,
         source: 'smoothui',
-        url: `https://smoothui.dev/doc/${detail.name}`,
-        attribution: `${detail.name} from SmoothUI by educlopez`,
+        category: item.type?.replace(/^registry:/, ''),
+        language: 'tsx',
+        code: code || JSON.stringify(item, null, 2),
+        dependencies: [...(item.dependencies ?? []), ...(item.registryDependencies ?? [])],
+        license: registry.license,
+        url: `https://smoothui.dev/doc/${item.name}`,
+        attribution: `${item.name} from SmoothUI by educlopez`,
       };
     },
   };

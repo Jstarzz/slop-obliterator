@@ -25,7 +25,7 @@ const SLOP_PAGE = `<!doctype html><html lang="en"><head><meta charset="utf-8">
   body { font-family: Inter, sans-serif; margin: 0; background: #ffffff; color: #4b5563; }
   .hero { background: linear-gradient(135deg, #667eea 0%, #764ba2 100%); color: #fff;
           padding: 96px 24px; text-align: center; position: relative; }
-  .eyebrow { font-size: 12px; letter-spacing: 0.18em; text-transform: uppercase; margin: 0 0 12px; }
+  .hero .eyebrow { font-size: 12px; letter-spacing: 0.18em; text-transform: uppercase; margin: 0 0 12px; }
   .hero h2 { font-size: 52px; font-weight: 600; margin: 0 0 16px; letter-spacing: -0.06em; }
   .hero p { font-size: 18px; max-width: none; margin: 0 auto 32px; line-height: 1.3; }
   .grad-text { background: linear-gradient(90deg, #6366f1, #a855f7); -webkit-background-clip: text;

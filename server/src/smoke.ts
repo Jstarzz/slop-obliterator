@@ -25,27 +25,27 @@ const SLOP_PAGE = `<!doctype html><html lang="en"><head><meta charset="utf-8">
   body { font-family: Inter, sans-serif; margin: 0; background: #ffffff; color: #4b5563; }
   .hero { background: linear-gradient(135deg, #667eea 0%, #764ba2 100%); color: #fff;
           padding: 96px 24px; text-align: center; position: relative; }
-  .eyebrow { font-size: 12px; letter-spacing: 0.18em; text-transform: uppercase; margin: 0 0 12px; }
+  .hero .eyebrow { font-size: 12px; letter-spacing: 0.18em; text-transform: uppercase; margin: 0 0 12px; }
   .hero h2 { font-size: 52px; font-weight: 600; margin: 0 0 16px; letter-spacing: -0.06em; }
   .hero p { font-size: 18px; max-width: none; margin: 0 auto 32px; line-height: 1.3; }
   .grad-text { background: linear-gradient(90deg, #6366f1, #a855f7); -webkit-background-clip: text;
                background-clip: text; -webkit-text-fill-color: transparent; font-size: 40px; font-weight: 700; }
   .cta { background: #6366f1; color: #fff; border: none; border-radius: 8px;
          padding: 14px 28px; font-size: 16px; outline: none; }
-  .glass { backdrop-filter: blur(16px); background: rgba(255,255,255,0.18); border-radius: 44px;
-           padding: 27px; margin: 24px auto; max-width: 420px; }
+  .glass { backdrop-filter: blur(16px); background: rgba(255,255,255,0.18); border: 1px solid rgba(255,255,255,0.65);
+           border-radius: 44px; padding: 27px; margin: 24px auto; max-width: 420px; }
   .features { display: grid; grid-template-columns: repeat(3, 1fr); gap: 24px;
               padding: 64px 24px; max-width: 1100px; margin: 0 auto;
               background-image: linear-gradient(#eef 1px, transparent 1px); background-size: 32px 32px; }
   .card { background: #fff; border-radius: 8px; box-shadow: 0 4px 6px rgba(0,0,0,0.1);
           padding: 27px; text-align: center; border-left: 4px solid #6366f1; }
-  .inner { background: #fafafa; border: 1px solid #eee; border-radius: 8px; padding: 13px; }
-  .deepest { background: #f4f4f5; border: 1px solid #e4e4e7; border-radius: 8px; padding: 11px; }
+  .inner { background: #fafafa; border: 1px solid #eee; border-radius: 8px; padding: 13px; min-height: 72px; }
+  .deepest { background: #f4f4f5; border: 1px solid #e4e4e7; border-radius: 8px; padding: 11px; min-height: 56px; }
   .tile { width: 48px; height: 48px; border-radius: 8px; background: #eef2ff; margin: 0 auto 13px;
           display: flex; align-items: center; justify-content: center; }
   .card h3 { font-size: 20px; font-weight: 600; margin: 13px 0 8px; }
   .card p { font-size: 15px; line-height: 1.25; color: #9ca3af; }
-  .num { font-size: 13px; color: #9ca3af; }
+  .num { font-size: 13px; color: #9ca3af; display: block; margin-bottom: 8px; }
   input { border: 1px solid #e5e7eb; border-radius: 8px; padding: 2px; outline: none; width: 100%; }
   .tiny { width: 18px; height: 18px; border-radius: 8px; background: #6366f1; border: none; outline: none; }
   .dot { width: 10px; height: 10px; border-radius: 50%; background: #22c55e; animation: pulse 1.6s infinite; }
@@ -56,23 +56,24 @@ const SLOP_PAGE = `<!doctype html><html lang="en"><head><meta charset="utf-8">
   @keyframes marquee { to { transform: translateX(-50%); } }
 </style></head><body>
 <section class="hero">
-  <p class="eyebrow">Introducing FlowSync</p>
+  <p class="eyebrow">INTRODUCING FLOWSYNC</p>
   <h2>Everything your whole team needs to ship faster than ever before</h2>
   <p>The all-in-one platform that empowers modern teams to streamline their workflow and unlock their full potential across every stage of the product lifecycle.</p>
   <div class="grad-text">10M+ builders</div>
   <button class="cta springy">Get Started</button>
-  <div class="glass">Not a feature. A platform. This isn't just about speed — it's about certainty.</div>
+  <div class="glass">Not a feature. A platform. This isn't just about speed — it's about certainty. It's not software. It's momentum.</div>
+  <div class="glass">Not just another dashboard. A command center. It's not about reports. It's about control.</div>
 </section>
 <section class="features">
-  <div class="card"><div class="tile"><svg width="24" height="24" viewBox="0 0 24 24"><circle cx="12" cy="12" r="10" fill="#818cf8"/></svg></div><span class="num">01</span><h3>Fast</h3><p>World-class performance that scales — seamlessly — with your enterprise-grade team.</p><div class="inner"><div class="deepest">Nested detail</div></div></div>
-  <div class="card"><div class="tile"><svg width="24" height="24" viewBox="0 0 24 24"><circle cx="12" cy="12" r="10" fill="#818cf8"/></svg></div><span class="num">02</span><h3>Secure</h3><p>Enterprise-grade security built in — from the very first line — of code.</p></div>
-  <div class="card"><div class="tile"><svg width="24" height="24" viewBox="0 0 24 24"><circle cx="12" cy="12" r="10" fill="#818cf8"/></svg></div><span class="num">03</span><h3>Simple</h3><p>An intuitive interface — that empowers — your whole team to move faster.</p></div>
+  <div class="card"><span class="num">01</span><div class="tile"><svg width="24" height="24" viewBox="0 0 24 24"><circle cx="12" cy="12" r="10" fill="#818cf8"/></svg></div><h3>Fast</h3><p>World-class performance that scales — seamlessly — with your enterprise-grade team.</p><div class="card inner"><div class="card deepest">Nested detail</div></div></div>
+  <div class="card"><span class="num">02</span><div class="tile"><svg width="24" height="24" viewBox="0 0 24 24"><circle cx="12" cy="12" r="10" fill="#818cf8"/></svg></div><h3>Secure</h3><p>Enterprise-grade security built in — from the very first line — of code.</p></div>
+  <div class="card"><span class="num">03</span><div class="tile"><svg width="24" height="24" viewBox="0 0 24 24"><circle cx="12" cy="12" r="10" fill="#818cf8"/></svg></div><h3>Simple</h3><p>An intuitive interface — that empowers — your whole team to move faster.</p></div>
 </section>
 <section style="padding:48px 24px;text-align:center">
   <div class="dot"></div>
   <div class="ticker">NORTHWIND HALCYON MERIDIAN FIELDNOTE NORTHWIND HALCYON MERIDIAN FIELDNOTE</div>
   <form><input type="email" placeholder="Email address"><button class="tiny"></button></form>
-  <img src="">
+  <img src="https://example.com/placeholder.png">
   <svg width="240" height="240" viewBox="0 0 100 100"><circle cx="20" cy="20" r="10" fill="#c7d2fe"/><circle cx="50" cy="20" r="10" fill="#a5b4fc"/><rect x="10" y="40" width="30" height="20" fill="#818cf8"/><rect x="50" y="40" width="30" height="20" fill="#6366f1"/><ellipse cx="50" cy="80" rx="30" ry="10" fill="#e0e7ff"/><line x1="0" y1="95" x2="100" y2="95" stroke="#c7d2fe"/></svg>
 </section>
 </body></html>`;
@@ -84,17 +85,18 @@ const CLEAN_PAGE = `<!doctype html><html lang="en"><head><meta charset="utf-8">
     --bg: #f3f4f7; --surface: #ffffff; --sunken: #e8eaef;
     --border: #cdd0da; --border-strong: #6f7484;
     --text: #1b1c22; --muted: #4e5162;
-    --primary: #0d5c53; --primary-fg: #ffffff; --accent: #8a3d12;
+    --primary: #0d5c53; --primary-fg: #e8fff9; --accent: #8a3d12;
     --s1: 4px; --s2: 8px; --s3: 16px; --s4: 24px; --s6: 48px; --s8: 80px;
     --r-sm: 3px; --r-md: 6px; --r-lg: 10px;
   }
-  * { box-sizing: border-box; }
+  * { box-sizing: border-box; transition-property: none; }
   body { margin: 0; background: var(--bg); color: var(--text);
          font-family: "Public Sans", system-ui, sans-serif; font-size: 17px; line-height: 1.62; }
-  h1, h2, h3, .mono { font-family: "IBM Plex Mono", ui-monospace, monospace; }
+  h1, h2, .mono { font-family: "IBM Plex Mono", ui-monospace, monospace; }
   h1 { font-size: 54px; font-weight: 800; line-height: 1.06; letter-spacing: -0.02em; margin: 0 0 var(--s3); }
-  h2 { font-size: 15px; font-weight: 500; letter-spacing: 0.02em; color: var(--muted); margin: 0 0 var(--s3); }
-  h3 { font-size: 21px; font-weight: 700; margin: var(--s4) 0 var(--s2); }
+  h2 { font-size: 21px; font-weight: 700; margin: var(--s4) 0 var(--s2); }
+  .product-label { font-size: 15px; font-weight: 500; letter-spacing: 0.02em; color: var(--muted); margin: 0 0 var(--s3); }
+  a { color: var(--accent); }
   main { max-width: 1080px; margin: 0 auto; padding: var(--s8) var(--s4); }
   .lede { max-width: 62ch; font-size: 20px; color: var(--muted); margin: 0 0 var(--s6); }
   .row { display: grid; grid-template-columns: 1.7fr 1fr; gap: var(--s6); align-items: start; }
@@ -117,12 +119,12 @@ const CLEAN_PAGE = `<!doctype html><html lang="en"><head><meta charset="utf-8">
 </style></head><body>
 <header><nav aria-label="Primary" style="padding:16px 24px"><a href="#main" class="well">Skip to content</a></nav></header>
 <main id="main">
-  <h2>Reconcile</h2>
+  <p class="mono product-label">Reconcile</p>
   <h1>Every entry, twice, in ink.</h1>
   <p class="lede">Double-entry bookkeeping for people who would rather read the ledger than a dashboard.</p>
   <div class="row">
     <section class="panel">
-      <h3>March ledger</h3>
+      <h2>March ledger</h2>
       <p>Each transaction lands in two places. The books balance or they do not, and you find out in the same second you type.</p>
       <table>
         <caption class="well">Unreconciled entries, 3 remaining</caption>
@@ -135,7 +137,7 @@ const CLEAN_PAGE = `<!doctype html><html lang="en"><head><meta charset="utf-8">
       </table>
     </section>
     <form class="panel">
-      <h3>Open an account</h3>
+      <h2>Open an account</h2>
       <label for="email">Work email <span aria-hidden="true">*</span></label>
       <input id="email" type="email" required autocomplete="email" aria-describedby="email-error">
       <p id="email-error" role="alert" style="font-size:14px;color:#8a3d12;margin:8px 0 16px">&nbsp;</p>

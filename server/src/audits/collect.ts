@@ -731,10 +731,11 @@ export function collectMeasurements(): RawMeasurements {
       const headingSize = px(style.fontSize);
       const headingText = (el.textContent ?? '').trim();
 
-      // Eyebrow: a small tracked-out label immediately above a much larger heading.
+      // Eyebrow / pill: the two common small labels immediately above a hero heading.
       const previous = el.previousElementSibling;
       if (previous) {
         const prevStyle = getComputedStyle(previous);
+        const prevRect = previous.getBoundingClientRect();
         const prevSize = px(prevStyle.fontSize);
         const prevText = (previous.textContent ?? '').trim();
         const prevTracking = px(prevStyle.letterSpacing) / (prevSize || 1);
@@ -745,12 +746,29 @@ export function collectMeasurements(): RawMeasurements {
           headingSize >= prevSize * 1.6 &&
           (prevStyle.textTransform === 'uppercase' || prevText === prevText.toUpperCase()) &&
           prevTracking >= 0.04;
-        if (isKicker) {
-          note(signals.eyebrowLabel, selectorFor(previous), `"${prevText.slice(0, 32)}" above ${tag}`);
+        const isPill =
+          rect.top < viewportHeight &&
+          headingSize >= 44 &&
+          prevText.length > 0 &&
+          prevText.length < 40 &&
+          prevSize <= 16 &&
+          prevRect.height >= 18 &&
+          prevRect.height <= 48 &&
+          prevRect.width >= 32 &&
+          prevRect.width <= 320 &&
+          px(prevStyle.borderTopLeftRadius) >= prevRect.height * 0.4 &&
+          (opaque(prevStyle.backgroundColor) || px(prevStyle.borderTopWidth) > 0);
+        if (isKicker || isPill) {
+          note(
+            signals.eyebrowLabel,
+            selectorFor(previous),
+            isPill
+              ? `pill label "${prevText.slice(0, 32)}" above ${tag}`
+              : `"${prevText.slice(0, 32)}" above ${tag}`,
+          );
         }
 
         // Icon tile: a small rounded square containing an svg, sitting above a heading.
-        const prevRect = previous.getBoundingClientRect();
         const hasSvg = !!previous.querySelector('svg,img');
         const squarish = Math.abs(prevRect.width - prevRect.height) < 8;
         if (
@@ -779,6 +797,45 @@ export function collectMeasurements(): RawMeasurements {
             `${words} words at ${Math.round(headingSize)}px, ${Math.round((rect.height / viewportHeight) * 100)}% of the fold`,
           );
         }
+
+        // Centered headline + two same-row CTAs is the default generated SaaS hero.
+        if (style.textAlign === 'center') {
+          const scope = el.closest('header,section,main') ?? el.parentElement;
+          if (scope) {
+            const controls = Array.from(scope.querySelectorAll<HTMLElement>('a[href],button,[role="button"]'))
+              .map((node) => {
+                const controlRect = node.getBoundingClientRect();
+                return { node, rect: controlRect, style: getComputedStyle(node) };
+              })
+              .filter(
+                (item) =>
+                  isVisible(item.style, item.rect) &&
+                  item.rect.top >= rect.bottom - 4 &&
+                  item.rect.top <= rect.bottom + 360 &&
+                  item.rect.width >= 44 &&
+                  item.rect.width <= 320 &&
+                  item.rect.height >= 24,
+              );
+
+            if (controls.length === 2) {
+              const [first, second] = controls as [typeof controls[number], typeof controls[number]];
+              const sameRow = Math.abs(first.rect.top - second.rect.top) < 16;
+              const similarHeight = Math.abs(first.rect.height - second.rect.height) < 8;
+              const left = Math.min(first.rect.left, second.rect.left);
+              const right = Math.max(first.rect.right, second.rect.right);
+              const groupCenter = (left + right) / 2;
+              const centered = Math.abs(groupCenter - viewportWidth / 2) <= viewportWidth * 0.12;
+              if (sameRow && similarHeight && centered) {
+                note(
+                  signals.oversizedHeroHeadline,
+                  sel,
+                  `centered hero with paired CTAs ${selectorFor(first.node)} + ${selectorFor(second.node)}`,
+                );
+              }
+            }
+          }
+        }
+
         const family = style.fontFamily.toLowerCase();
         const serif =
           /serif|georgia|garamond|playfair|instrument|times|didot|bodoni|cormorant|freight/.test(family) &&

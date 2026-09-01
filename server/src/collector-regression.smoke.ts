@@ -28,7 +28,7 @@ async function measure(html: string) {
 try {
   const defaults = await measure(`<!doctype html><html><body style="margin:0">
     <button style="background:#0d5c53;color:#fff;padding:12px 18px;border:0">Save changes</button>
-    <p style="color:#111">Ordinary text</p>
+    <p style="background:#ffe76a;color:#000;padding:12px">Black on pale yellow</p>
   </body></html>`);
 
   assert(
@@ -37,7 +37,7 @@ try {
   );
   assert(
     defaults.signals.greyOnColored.count === 0,
-    `white text on a coloured control must not be classified as grey: ${defaults.signals.greyOnColored.count}`,
+    `white/black text on coloured surfaces must not be classified as mid-grey: ${defaults.signals.greyOnColored.count}`,
   );
 
   const actualTransition = await measure(`<!doctype html><html><body>

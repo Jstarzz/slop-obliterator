@@ -15,6 +15,7 @@
     "prepare:browser": "playwright install chromium",
     "prepare": "npm run build",
     "start": "node dist/index.js",
+    "test": "node dist/selftest.js && node dist/intelligence.selftest.js",
     "test": "node dist/selftest.js && node dist/sources/components.selftest.js",
     "smoke": "node dist/smoke.js"
   },

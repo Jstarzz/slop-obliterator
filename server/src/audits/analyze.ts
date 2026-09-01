@@ -14,6 +14,12 @@
 import type { RawMeasurements } from './collect.js';
 import { RULES, runRules } from './rules/registry.js';
 import type { DesignContract, Dimension, Kind, Severity } from './rules/types.js';
+import {
+  detectTemplateSignatures,
+  signalIsOnlyHeroPills,
+  signalIsOnlyPairedHeroCtas,
+  TEMPLATE_SIGNATURE_IDS,
+} from './template-signatures.js';
 
 export type { Dimension, Severity, Kind };
 
@@ -91,21 +97,37 @@ export function analyze(
     notes.push('No design contract supplied; the four drift rules were skipped. Pass design_md to enable them.');
   }
 
-  const hits = runRules({ raw, design: options.design ?? null }, options.disabled ?? new Set());
+  const disabled = options.disabled ?? new Set<string>();
+  const hits = runRules({ raw, design: options.design ?? null }, disabled);
+  const templateFindings = detectTemplateSignatures(raw, disabled);
+
+  // The compound signatures reuse two existing collector channels for wire
+  // compatibility. When the signal contains only the newer template shape,
+  // suppress the older generic finding so one DOM pattern does not get scored
+  // twice under two names. Mixed pages still report both distinct problems.
+  const suppressLegacyEyebrow = signalIsOnlyHeroPills(raw);
+  const suppressLegacyOversizedHero = signalIsOnlyPairedHeroCtas(raw);
 
   const wanted = options.kinds && options.kinds.length > 0 ? new Set(options.kinds) : null;
 
-  const findings: Finding[] = hits
-    .filter(({ rule }) => !wanted || wanted.has(rule.kind))
-    .map(({ rule, hit }) => ({
-      id: rule.id,
-      severity: hit.severity ?? rule.severity,
-      kind: rule.kind,
-      dimension: rule.dimension,
-      title: hit.title ?? rule.title,
-      evidence: hit.evidence,
-      fix: rule.fix,
-    }));
+  const findings: Finding[] = [
+    ...hits
+      .filter(({ rule }) => {
+        if (rule.id === 'type.eyebrow-label' && suppressLegacyEyebrow) return false;
+        if (rule.id === 'type.oversized-hero-headline' && suppressLegacyOversizedHero) return false;
+        return true;
+      })
+      .map(({ rule, hit }) => ({
+        id: rule.id,
+        severity: hit.severity ?? rule.severity,
+        kind: rule.kind,
+        dimension: rule.dimension,
+        title: hit.title ?? rule.title,
+        evidence: hit.evidence,
+        fix: rule.fix,
+      })),
+    ...templateFindings,
+  ].filter((finding) => !wanted || wanted.has(finding.kind));
 
   const order: Record<Severity, number> = { blocker: 0, major: 1, minor: 2 };
   findings.sort((a, b) => order[a.severity] - order[b.severity] || a.id.localeCompare(b.id));
@@ -142,6 +164,9 @@ export function analyze(
     .map((v) => chromaOf(v))
     .filter((c): c is number => c !== null);
 
+  const knownRuleIds = new Set([...RULES.map((rule) => rule.id), ...TEMPLATE_SIGNATURE_IDS]);
+  const disabledKnownRules = [...disabled].filter((id) => knownRuleIds.has(id)).length;
+
   return {
     url: raw.url,
     viewport: `${viewportName} (${raw.viewport.width}x${raw.viewport.height})`,
@@ -151,7 +176,7 @@ export function analyze(
     dimensions,
     findings,
     counts,
-    rulesRun: RULES.length - (options.disabled?.size ?? 0),
+    rulesRun: knownRuleIds.size - disabledKnownRules,
     passed: summarisePasses(raw, findings),
     stats: {
       distinctColors: raw.colors.length,

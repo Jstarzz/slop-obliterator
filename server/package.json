@@ -16,7 +16,7 @@
     "prepare": "npm run build",
     "start": "node dist/index.js",
     "test": "node dist/selftest.js",
-    "smoke": "node dist/smoke.js"
+    "smoke": "node dist/smoke.js && node dist/collector-regression.smoke.js"
   },
   "dependencies": {
     "@modelcontextprotocol/sdk": "^1.30.0",

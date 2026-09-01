@@ -35,6 +35,7 @@ import {
 } from './color/oklch.js';
 import { generateSystem } from './color/system.js';
 import { LLM_ONLY_CHECKS, renderCritiqueChecklist, renderReport, renderResponsiveSummary } from './format.js';
+import { registerIntelligenceRuntimeTools } from './intelligence-runtime.js';
 import { componentSources } from './sources/components.js';
 import { getIconSvg, installedSetsSummary, searchIcons, type IconSet } from './sources/icons.js';
 
@@ -52,6 +53,8 @@ const server = new McpServer(
       'picking hex values by hand.',
   },
 );
+
+registerIntelligenceRuntimeTools(server, driver);
 
 /* ------------------------------------------------------------ target schema */
 

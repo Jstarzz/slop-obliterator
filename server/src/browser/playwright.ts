@@ -23,7 +23,9 @@ type Browser = import('playwright').Browser;
 type BrowserContext = import('playwright').BrowserContext;
 type Page = import('playwright').Page;
 
-const IDLE_SHUTDOWN_MS = Number(process.env.SLOP_BROWSER_IDLE_MS ?? 180_000);
+const IDLE_SHUTDOWN_MS = envNumber('SLOP_BROWSER_IDLE_MS', 180_000, 0, 24 * 60 * 60 * 1000);
+const NETWORK_IDLE_MS = envNumber('SLOP_NETWORK_IDLE_MS', 0, 0, 5_000);
+const MAX_CONSOLE_ERRORS = envNumber('SLOP_MAX_CONSOLE_ERRORS', 100, 1, 1_000);
 
 export class PlaywrightDriver implements BrowserDriver {
   readonly name = 'playwright';
@@ -48,15 +50,21 @@ export class PlaywrightDriver implements BrowserDriver {
 
     const page = await context.newPage();
     const consoleErrors: ConsoleEntry[] = [];
+    const recordConsoleError = (entry: ConsoleEntry) => {
+      // The audit report only needs to know that errors happened and show a
+      // small sample. A page spamming thousands of console errors should not
+      // turn one MCP call into an unbounded memory sink.
+      if (consoleErrors.length < MAX_CONSOLE_ERRORS) consoleErrors.push(entry);
+    };
 
     page.on('console', (message) => {
       const type = message.type();
       if (type === 'error' || type === 'warning') {
-        consoleErrors.push({ type, text: message.text().slice(0, 400) });
+        recordConsoleError({ type, text: message.text().slice(0, 400) });
       }
     });
     page.on('pageerror', (error) => {
-      consoleErrors.push({ type: 'pageerror', text: String(error?.message ?? error).slice(0, 400) });
+      recordConsoleError({ type: 'pageerror', text: String(error?.message ?? error).slice(0, 400) });
     });
 
     this.#openSessions += 1;
@@ -64,8 +72,16 @@ export class PlaywrightDriver implements BrowserDriver {
 
     try {
       await navigate(page, target);
-      // networkidle is unreliable on pages with long-polling; fall back quietly.
-      await page.waitForLoadState('networkidle', { timeout: 5_000 }).catch(() => undefined);
+
+      // Playwright explicitly discourages networkidle as a generic readiness
+      // signal. It also creates a nasty tail on apps with polling/streaming.
+      // The default audit path waits for DOM navigation, fonts, and the
+      // caller-controlled settle window instead. Keep networkidle as an opt-in
+      // compatibility knob for a page that genuinely needs it.
+      if (NETWORK_IDLE_MS > 0) {
+        await page.waitForLoadState('networkidle', { timeout: NETWORK_IDLE_MS }).catch(() => undefined);
+      }
+
       await page.evaluate(() => document.fonts?.ready).catch(() => undefined);
       if (options.settleMs && options.settleMs > 0) {
         await page.waitForTimeout(Math.min(options.settleMs, 10_000));
@@ -200,6 +216,14 @@ async function navigate(page: Page, target: OpenTarget): Promise<void> {
     throw new Error(`Refusing to navigate to "${url}". Only http and https URLs are allowed; use "file" for local paths.`);
   }
   await page.goto(url, { waitUntil: 'domcontentloaded', timeout: 30_000 });
+}
+
+function envNumber(name: string, fallback: number, min: number, max: number): number {
+  const raw = process.env[name];
+  if (raw === undefined || raw.trim() === '') return fallback;
+  const value = Number(raw);
+  if (!Number.isFinite(value)) return fallback;
+  return Math.min(max, Math.max(min, Math.round(value)));
 }
 
 function describe(error: unknown): string {

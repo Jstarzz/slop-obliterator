@@ -215,6 +215,13 @@ export function collectMeasurements(): RawMeasurements {
     return Number.isFinite(n) ? n : 0;
   };
 
+  const hasNonZeroDuration = (value: string): boolean =>
+    value.split(',').some((part) => {
+      const token = part.trim();
+      if (!token.endsWith('s')) return false;
+      return Number.parseFloat(token) > 0;
+    });
+
   const isVisible = (style: CSSStyleDeclaration, rect: DOMRect): boolean =>
     style.display !== 'none' &&
     style.visibility !== 'hidden' &&
@@ -246,7 +253,8 @@ export function collectMeasurements(): RawMeasurements {
   const isGrey = (color: string): boolean => {
     const rgb = rgbOf(color);
     if (!rgb) return false;
-    return Math.max(...rgb) - Math.min(...rgb) <= 12;
+    const value = luma(color);
+    return Math.max(...rgb) - Math.min(...rgb) <= 12 && value > 0.08 && value < 0.92;
   };
 
   const isNeutralish = (color: string): boolean => {
@@ -600,7 +608,9 @@ export function collectMeasurements(): RawMeasurements {
       }
     }
 
-    if (style.transitionProperty === 'all') motion.transitionAllCount += 1;
+    if (style.transitionProperty === 'all' && hasNonZeroDuration(style.transitionDuration)) {
+      motion.transitionAllCount += 1;
+    }
 
     for (const timing of [style.animationTimingFunction, style.transitionTimingFunction]) {
       if (!timing || timing === 'none') continue;
@@ -619,8 +629,10 @@ export function collectMeasurements(): RawMeasurements {
     }
 
     const animatedProps = `${style.transitionProperty} ${style.willChange}`;
-    if (/\b(width|height|padding|margin|top|left|right|bottom)\b/.test(animatedProps) &&
-        style.transitionDuration !== '0s') {
+    if (
+      /\b(width|height|padding|margin|top|left|right|bottom)\b/.test(animatedProps) &&
+      hasNonZeroDuration(style.transitionDuration)
+    ) {
       note(motion.layoutPropertyAnimation, sel, `transitions ${style.transitionProperty}`);
     }
 

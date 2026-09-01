@@ -22,9 +22,9 @@
     "@modelcontextprotocol/sdk": "^1.30.0",
     "@tabler/icons": "^3.46.0",
     "culori": "^4.0.2",
-    "lucide-static": "^1.30.0",
+    "lucide-static": "^1.37.0",
     "playwright": "^1.62.1",
-    "zod": "^4.4.3"
+    "zod": "^4.5.2"
   },
   "devDependencies": {
     "@types/culori": "^4.0.1",

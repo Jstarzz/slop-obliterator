@@ -2,7 +2,7 @@
   "name": "@slop-obliterator/server",
   "version": "0.2.0",
   "private": true,
-  "description": "MCP server: browser-backed design auditing, OKLCH token generation, offline icon and component search.",
+  "description": "MCP server: browser-backed design auditing, polish checks, OKLCH token generation, offline icon and component search.",
   "license": "MIT",
   "type": "module",
   "main": "dist/index.js",
@@ -15,8 +15,8 @@
     "prepare:browser": "playwright install chromium",
     "prepare": "npm run build",
     "start": "node dist/index.js",
-    "test": "node dist/selftest.js && node dist/sources/components.selftest.js && node dist/intelligence.selftest.js",
-    "smoke": "node dist/collector-regression.smoke.js && node dist/smoke.js"
+    "test": "node dist/selftest.js && node dist/sources/components.selftest.js && node dist/intelligence.selftest.js && node dist/polish/selftest.js",
+    "smoke": "node dist/collector-regression.smoke.js && node dist/smoke.js && node dist/polish/smoke.js"
   },
   "dependencies": {
     "@modelcontextprotocol/sdk": "^1.30.0",

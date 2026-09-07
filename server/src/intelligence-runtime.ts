@@ -12,6 +12,7 @@ import {
   type RuntimeAuditRequest,
   type RuntimeAuditResult,
 } from './intelligence.js';
+import { registerPolishTools } from './polish/runtime.js';
 
 function toTarget(request: RuntimeAuditRequest): OpenTarget {
   const provided = [request.url, request.file, request.html].filter((value) => value !== undefined);
@@ -58,4 +59,5 @@ export function registerIntelligenceRuntimeTools(server: McpServer, driver: Play
   registerIntelligenceTools(server, {
     runAudit: (request) => runAudit(driver, request),
   });
+  registerPolishTools(server, driver);
 }

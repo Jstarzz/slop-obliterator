@@ -68,7 +68,7 @@ async function main(): Promise<void> {
     assert.deepEqual(clean.findings, [], `clean fixture should have zero polish findings, got ${clean.findings.map((f) => f.id).join(', ')}`);
     console.log(`POLISH SMOKE PASSED (${sloppy.findings.length} sloppy findings, clean=0)`);
   } finally {
-    await driver.close();
+    await driver.shutdown();
   }
 }
 

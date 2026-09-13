@@ -22,6 +22,19 @@ Use the highest-authority source that answers the question:
 7. **Expressive/motion libraries** - use these to solve a specific interaction or visual moment, not to decorate every section.
 8. **External visual references** - learn hierarchy/composition/pattern decisions; do not copy branding or exact layouts.
 
+## Fast path: one compact planning call
+
+For a new product surface, prefer `design_plan` before issuing separate structural and interaction searches. It performs the deterministic part of the research loop in one bounded call: ranks references by synthesis role, prefers different references for different jobs when plausible, and returns a short interaction-pattern shortlist.
+
+```text
+design_plan(query: "port checkpoint nfc verification offline Android", platform: "mobile")
+design_plan(query: "ambulance dispatch exception triage map", platform: "web")
+```
+
+Use its output as a research plan, not as permission to skip judgement. Inspect only the role finalists you actually need, then commit the chosen non-overlapping roles with `reference_contract`. `design_plan` deliberately does not choose visual style, branding, or an end-to-end source to clone.
+
+Use the lower-level `reference_find`, `reference_rank_axes`, and `pattern_find` tools directly when you need to inspect or challenge one part of the plan.
+
 ## Structural reference search
 
 `reference_find` is intentionally smaller than visual web research. Query by product and task, not style:
@@ -78,7 +91,8 @@ Then search one or two sources that fit. Do not shotgun every library and dump 8
 
 ## Retrieval rules
 
-- Start with `reference_find` when the problem is structural.
+- Start with `design_plan` for a new product surface when the domain + primary task are known.
+- Drop to `reference_find` / `reference_rank_axes` when you need to inspect structural alternatives manually.
 - Use `pattern_find` before component search when the information architecture is known but the interaction shape is not.
 - Start with `component_find` only when the missing capability is already known.
 - Query components by the interaction/problem: `command palette`, `animated tabs`, `data table density`, `hero background`, not vague `cool component`.
@@ -99,6 +113,7 @@ Then search one or two sources that fit. Do not shotgun every library and dump 8
 - treating a design-system MCP as a style generator; it is a source of truth for that system
 - loading an entire reference catalogue when a four-result structural shortlist answers the question
 - jumping from "CRM" or "dashboard" straight to cards without selecting the interaction pattern
+- treating `design_plan` as an end-to-end template selector; it is a bounded decision aid
 
 ## Handoff
 

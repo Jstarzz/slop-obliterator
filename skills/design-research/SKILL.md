@@ -1,6 +1,6 @@
 ---
 name: design-research
-description: Use when choosing a design system, component source, UI primitive library, motion library, structural reference, or reference implementation before building a UI. Triggers on requests for "design systems", "component libraries", "UI inspiration", "React Bits", "Magic UI", "KokonutUI", "Primer", "Carbon", "Radix", "what should I build this with", comparing app designs, and when ui-design needs raw material beyond the built-in component search. Chooses sources by job, stack, accessibility needs, license, and whether the source is authoritative or merely inspiration.
+description: Use when choosing a design system, component source, UI primitive library, motion library, structural reference, interaction pattern, or reference implementation before building a UI. Triggers on requests for "design systems", "component libraries", "UI inspiration", "React Bits", "Magic UI", "KokonutUI", "Primer", "Carbon", "Radix", "what should I build this with", comparing app designs, and when ui-design needs raw material beyond the built-in component search. Chooses sources by job, stack, accessibility needs, license, and whether the source is authoritative or merely inspiration.
 ---
 
 # Design source research
@@ -15,11 +15,12 @@ Use the highest-authority source that answers the question:
 
 1. **The project's own design contract and components** - existing product decisions beat external taste.
 2. **Structural reference routes** - call `reference_find` with the product + primary task. It returns a few compact app structures without loading screenshots or a giant catalogue. Expand only shortlisted routes with `reference_expand`.
-3. **Official design-system MCP/docs** - when the project uses Primer, Carbon, shadcn, or another established system, query its current source of truth rather than guessing APIs from memory.
-4. **Accessible primitives** - use low-level libraries such as Radix when you need interaction semantics and composability more than a finished visual language.
-5. **Curated component registries** - use the MCP's `component_find` for installable raw material. Adapt it into the project's tokens and direction.
-6. **Expressive/motion libraries** - use these to solve a specific interaction or visual moment, not to decorate every section.
-7. **External visual references** - learn hierarchy/composition/pattern decisions; do not copy branding or exact layouts.
+3. **Interaction-pattern decisions** - call `pattern_find` once the repeated task and information shape are understood. Choose the smallest useful pattern (master-detail, exception queue, map+dock, table, timeline, wizard, checklist, etc.) before browsing implementation libraries.
+4. **Official design-system MCP/docs** - when the project uses Primer, Carbon, shadcn, or another established system, query its current source of truth rather than guessing APIs from memory.
+5. **Accessible primitives** - use low-level libraries such as Radix when you need interaction semantics and composability more than a finished visual language.
+6. **Curated component registries** - use the MCP's `component_find` for installable raw material. Adapt it into the project's tokens and direction.
+7. **Expressive/motion libraries** - use these to solve a specific interaction or visual moment, not to decorate every section.
+8. **External visual references** - learn hierarchy/composition/pattern decisions; do not copy branding or exact layouts.
 
 ## Structural reference search
 
@@ -34,6 +35,18 @@ reference_find(query: "developer infrastructure logs incident triage", platform:
 It searches 15+ compact archetypes and returns structure, interactions, useful component families, and anti-patterns. Compare 2-4 routes for different jobs, then use `design-synthesis`; do not treat the top result as a template.
 
 Only call `reference_expand` for finalists. Empty queries deliberately return nothing so an agent cannot accidentally dump the entire reference catalogue into context.
+
+## Interaction pattern search
+
+After the broad structure is chosen, query the actual repeated task:
+
+```text
+pattern_find(query: "operators triage exceptions then inspect one without losing queue context", platform: "web", limit: 4)
+pattern_find(query: "field inspection checklist evidence offline resume", platform: "mobile", limit: 4)
+pattern_find(query: "vehicle map selection route context", platform: "mobile", limit: 4)
+```
+
+Patterns are decision cards, not components. They say when the pattern fits, what information shape it expects, what interactions must exist, when not to use it, and how it adapts to mobile. Use `pattern_expand` only for a finalist. Do not combine several patterns merely because they all scored reasonably well.
 
 ## Built-in registry directory
 
@@ -65,7 +78,9 @@ Then search one or two sources that fit. Do not shotgun every library and dump 8
 
 ## Retrieval rules
 
-- Start with `reference_find` when the problem is structural; start with `component_find` only when the missing capability is already known.
+- Start with `reference_find` when the problem is structural.
+- Use `pattern_find` before component search when the information architecture is known but the interaction shape is not.
+- Start with `component_find` only when the missing capability is already known.
 - Query components by the interaction/problem: `command palette`, `animated tabs`, `data table density`, `hero background`, not vague `cool component`.
 - Fetch only the top few candidates.
 - Inspect dependencies before choosing. A visually tiny component can have a large runtime cost.
@@ -83,6 +98,7 @@ Then search one or two sources that fit. Do not shotgun every library and dump 8
 - proxying or vendoring source whose license restricts redistribution
 - treating a design-system MCP as a style generator; it is a source of truth for that system
 - loading an entire reference catalogue when a four-result structural shortlist answers the question
+- jumping from "CRM" or "dashboard" straight to cards without selecting the interaction pattern
 
 ## Handoff
 

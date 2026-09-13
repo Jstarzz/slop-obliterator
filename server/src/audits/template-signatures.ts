@@ -15,6 +15,11 @@ export const TEMPLATE_SIGNATURE_IDS = [
   'type.hero-pill-badge',
   'layout.paired-hero-ctas',
   'copy.canned-social-proof',
+  'copy.ai-throat-clearing',
+  'copy.future-is-here',
+  'copy.focus-on-what-matters',
+  'copy.whether-you-are',
+  'copy.ready-to-cta',
 ] as const;
 
 const SOCIAL_PROOF_PATTERNS = [
@@ -22,6 +27,66 @@ const SOCIAL_PROOF_PATTERNS = [
   /\b(?:used by|chosen by|loved by)\s+(?:more than\s+|over\s+)?([\d,.]+\+?|\d+(?:\.\d+)?[km]\+?)\s+(teams|companies|businesses|developers|customers|users|creators|organizations)\b/gi,
   /\bjoin\s+(?:more than\s+|over\s+)?([\d,.]+\+?|\d+(?:\.\d+)?[km]\+?)\s+(teams|companies|businesses|developers|customers|users|creators|organizations)\b/gi,
   /\b([\d,.]+\+?|\d+(?:\.\d+)?[km]\+?)\s+(teams|companies|businesses|developers|customers|users|creators|organizations)\s+(?:trust|use|choose|love)\b/gi,
+];
+
+interface CopySignature {
+  id: (typeof TEMPLATE_SIGNATURE_IDS)[number];
+  title: string;
+  patterns: RegExp[];
+  fix: string;
+}
+
+const COPY_SIGNATURES: CopySignature[] = [
+  {
+    id: 'copy.ai-throat-clearing',
+    title: 'Generic AI throat-clearing opener',
+    patterns: [
+      /\bin today['’]s (?:fast[- ]paced|rapidly (?:changing|evolving)|ever[- ]changing) (?:world|landscape|environment)\b/gi,
+      /\bin today['’]s digital (?:age|world|landscape)\b/gi,
+      /\bin an increasingly (?:digital|connected|complex|competitive) world\b/gi,
+      /\bin a world where\b/gi,
+      /\bnow more than ever\b/gi,
+    ],
+    fix: 'Delete the scene-setting preamble. Start with the concrete problem, fact, or claim this paragraph actually exists to communicate.',
+  },
+  {
+    id: 'copy.future-is-here',
+    title: '“The future is here” marketing cliché',
+    patterns: [
+      /\bthe future of [^.!?\n]{2,60} is here\b/gi,
+      /\bwelcome to the future of [^.!?\n]{2,60}\b/gi,
+      /\b(?:step|enter) into the future of [^.!?\n]{2,60}\b/gi,
+    ],
+    fix: 'Replace the futurism with the actual capability and why it matters now. A concrete present-tense advantage is stronger than declaring the future has arrived.',
+  },
+  {
+    id: 'copy.focus-on-what-matters',
+    title: '“Focus on what matters” filler promise',
+    patterns: [
+      /\bso you can focus on what matters(?: most)?\b/gi,
+      /\blet(?:ting|s)? you focus on what matters(?: most)?\b/gi,
+      /\bfree(?:ing)? you (?:up )?to focus on what matters(?: most)?\b/gi,
+    ],
+    fix: 'Name the thing the user gets time back for. “What matters” is a placeholder, not a benefit.',
+  },
+  {
+    id: 'copy.whether-you-are',
+    title: 'Generic “whether you’re X or Y” audience sweep',
+    patterns: [
+      /\bwhether you(?:['’]re| are) [^.!?\n]{2,70}\s+or\s+[^.!?\n]{2,70}[,.!?]/gi,
+      /\bwhether you(?:['’]re| are) [^.!?\n]{2,70}\s+or\s+[^.!?\n]{2,70}$/gim,
+    ],
+    fix: 'Write for the actual audience. If two groups genuinely need different value propositions, say what each one gets instead of sweeping them into one generic sentence.',
+  },
+  {
+    id: 'copy.ready-to-cta',
+    title: 'Canned “ready to…” CTA question',
+    patterns: [
+      /\bready to (?:get started|take the next step|transform|elevate|unlock|supercharge|revolutionize)[^?]{0,70}\?/gi,
+      /\bwhat are you waiting for\?/gi,
+    ],
+    fix: 'State the action directly. The button already asks for a decision; a rhetorical warm-up adds generated-marketing cadence without information.',
+  },
 ];
 
 function metricValue(raw: string): number {
@@ -38,6 +103,20 @@ function quantifiedSocialProof(text: string): string[] {
     for (const match of text.matchAll(pattern)) {
       if (metricValue(match[1] ?? '0') < 100) continue;
       matches.add(match[0].trim());
+      if (matches.size >= 3) return [...matches];
+    }
+  }
+  return [...matches];
+}
+
+function copySignatureMatches(text: string, patterns: RegExp[]): string[] {
+  const matches = new Set<string>();
+  for (const pattern of patterns) {
+    pattern.lastIndex = 0;
+    for (const match of text.matchAll(pattern)) {
+      const value = match[0].trim();
+      if (!value) continue;
+      matches.add(value);
       if (matches.size >= 3) return [...matches];
     }
   }
@@ -88,6 +167,21 @@ export function detectTemplateSignatures(
       title: 'Generic quantified social proof',
       evidence: proof.map((match) => `“${match.slice(0, 90)}”`),
       fix: 'If the number is real, make it auditable: name the cohort, source it, and time-box it. Otherwise use named customers, a concrete testimonial or case study, or omit the proof claim entirely.',
+    });
+  }
+
+  for (const signature of COPY_SIGNATURES) {
+    if (disabled.has(signature.id)) continue;
+    const matches = copySignatureMatches(raw.visibleText, signature.patterns);
+    if (matches.length === 0) continue;
+    findings.push({
+      id: signature.id,
+      severity: 'minor',
+      kind: 'slop',
+      dimension: 'copy',
+      title: signature.title,
+      evidence: matches.map((match) => `“${match.slice(0, 110)}”`),
+      fix: signature.fix,
     });
   }
 

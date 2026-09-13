@@ -13,6 +13,7 @@ import {
   type RuntimeAuditResult,
 } from './intelligence.js';
 import { registerPolishTools } from './polish/runtime.js';
+import { registerReferenceAxisTools } from './references/axes.js';
 import { registerDesignReferenceTools } from './references/design.js';
 
 function toTarget(request: RuntimeAuditRequest): OpenTarget {
@@ -62,4 +63,5 @@ export function registerIntelligenceRuntimeTools(server: McpServer, driver: Play
   });
   registerPolishTools(server, driver);
   registerDesignReferenceTools(server);
+  registerReferenceAxisTools(server);
 }

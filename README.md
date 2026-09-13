@@ -10,13 +10,15 @@ Every default in this plugin exists to force a decision at a fork where a model 
 
 ## What's in it
 
-**An MCP server** that renders pages in a real browser and measures them against **89 deterministic rules**, generates colour systems, and searches icon and component libraries.
+**An MCP server** that renders pages in a real browser and measures them against **89 deterministic rules**, generates colour systems, searches icon/component libraries, and returns compact structural references for different product classes.
 
-**Eight skills** carrying the judgement and workflow the server can't:
+**Nine skills** carrying the judgement and workflow the server can't:
 
 | Skill | Job |
 |---|---|
 | `ui-design` | Aesthetic direction, colour, type, layout, motion, states, mockups |
+| `design-synthesis` | Combines decisions from 2-4 references into one original coherent design instead of cloning templates |
+| `design-research` | Chooses structural references, component/design-system sources, and research paths by job, stack, licence, and cost |
 | `mobile-ui` | Touch-first/mobile structure, platform behavior, keyboard/offline states, mobile anti-slop |
 | `critique` | Full review: 89 rules plus the 11 judgements no detector can make |
 | `grill` | Interrogates a brief until it's specific enough to build without guessing |
@@ -25,7 +27,9 @@ Every default in this plugin exists to force a decision at a fork where a model 
 | `code-smells` | Focused diagnosis of concurrency, data, frontend, DB, testing, security, and performance smells |
 | `agent-workflow` | Narrow-context implementation, specialist review gates, and independent outcome verification |
 
-The UI skill also ships compact references for **15 product archetypes** (operations, CRM, healthcare, finance, dispatch, security, developer tools, BI, CMS, commerce, social, support, field work, and more), plus a token-budgeted component/icon retrieval workflow. The point is not to copy templates; it is to stop every product from converging on the same dashboard/card layout.
+The UI layer ships compact references for **15+ product archetypes** (operations, CRM, healthcare, finance, dispatch, security, developer tools, BI, CMS, commerce, social, support, field work, and more), plus a token-budgeted component/icon retrieval workflow. The point is not to copy templates; it is to stop every product from converging on the same dashboard/card layout.
+
+The new reference flow is deliberately compositional. An agent can query several structural routes, assign each reference a different job — structure, interaction, density, visual language, domain convention — then synthesize those decisions into a new design under one project token system. It should learn *why* a reference works rather than reproduce its pixels.
 
 **Four specialist agents** for independent review rather than implementer self-certification:
 
@@ -127,8 +131,12 @@ Restart the app after editing.
 | `design_system` | OKLCH ramps + semantic tokens, WCAG-verified, as CSS and Tailwind v4 `@theme` |
 | `contrast_check` | Ratio + OKLCH ΔL per pair, and the nearest passing shade when one fails |
 | `judge_color` | Flags signature hexes, the indigo/violet band, and chroma too low to be an accent |
+| `reference_find` | Searches compact structural app references and returns a few candidate routes with structure/interactions/components/anti-patterns |
+| `reference_expand` | Expands one shortlisted structural route; avoids loading the whole reference catalogue |
 | `icon_find` | ~7000 Tabler + Lucide icons, offline, ranked |
 | `component_find` / `component_fetch` | Uiverse, SmoothUI, and shadcn-schema registries |
+
+`reference_find` should normally happen before component search on a new product surface. Query by product + primary task (`ambulance dispatch exception handling`, `port checkpoint NFC verification`, `offline inspection sync`) rather than by aesthetic adjectives. Compare several routes for different roles, synthesize the chosen decisions, then search only for missing component capabilities.
 
 `component_find` treats registry indexes as reference data: the catalogue is cached by registry source for the session TTL and query ranking/filtering happens locally. Different searches therefore reuse the same downloaded index instead of creating one network/cache entry per `q=` value. Fetch full component source only after choosing a finalist.
 
@@ -161,7 +169,9 @@ Mobile has the same limitation in a different form: a structurally wrong app can
 
 Published benchmarks put a naive browser MCP at ~114k tokens for a ten-step task, almost all of it raw page snapshots. This server measures in the page and judges in Node, so the model only sees the conclusion — an audit is a few hundred tokens. Screenshots are opt-in for the same reason.
 
-The component workflow follows the same rule: search returns compact summaries, then source is fetched only for the selected item. App-archetype references are selected one at a time rather than loading the entire catalogue into context.
+The reference workflow follows the same rule. `reference_find` returns a tiny structural shortlist; `reference_expand` loads only a finalist. A design synthesis normally needs 2-4 references with at most three extracted decisions each, not an inspiration dump.
+
+The component workflow is similarly staged: search returns compact summaries, then source is fetched only for selected items. Registry catalogues are cached once and ranked locally across subsequent queries.
 
 The agent workflow follows the same rule: reviewers receive changed symbols/files and acceptance criteria, not whole-repository or whole-conversation dumps.
 
@@ -170,6 +180,8 @@ The agent workflow follows the same rule: reviewers receive changed symbols/file
 ## Design notes
 
 **The browser is behind a seam.** `src/browser/driver.ts` defines the interface; `playwright.ts` implements it. Nothing else in the server imports Playwright. Swapping to CDP, `agent-browser`, or whatever ships next year touches one file.
+
+**Structural references are data, not screenshots.** The MCP stores compact decisions for each app archetype — tasks, structure, interactions, component families, mobile constraints, and failure modes — and ranks them locally. This gives agents multiple design routes at tiny context cost, while external visual references remain useful when pixel-level evidence is actually needed.
 
 **Component sources are adapters.** Each is one object implementing `ComponentSource`. Adding a registry or fixing one whose API moved is a local change. Registry catalogues are cached by source/root rather than by search query, so repeated searches are local ranking work after the first fetch.
 
@@ -185,7 +197,7 @@ The agent workflow follows the same rule: reviewers receive changed symbols/file
 
 ## Testing
 
-`npm test` runs `selftest.js` plus the component-source, intelligence, and polish selftests. The component-source selftest verifies that multiple different searches reuse each registry catalogue instead of refetching it.
+`npm test` runs `selftest.js` plus the component-source, design-reference, intelligence, and polish selftests. The component-source selftest verifies that multiple different searches reuse each registry catalogue instead of refetching it. The design-reference selftest verifies the catalogue breadth, ranking for several product/task queries, compact limits, and that an empty query cannot dump the full catalogue.
 
 Three things matter in the design-rule selftest:
 

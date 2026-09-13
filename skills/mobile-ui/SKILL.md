@@ -11,11 +11,25 @@ Mobile is not a breakpoint. Treat it as a different operating environment: one h
 
 1. Name the primary task loop in one line: `receive -> triage -> act`, `capture -> confirm -> review`, etc.
 2. Pick the closest product structure from `../ui-design/references/app-archetypes.md`. Load only that archetype, not the entire catalogue into working context.
-3. Read `../ui-design/references/mobile.md` for mobile-specific constraints and slop tells.
-4. Reuse the project's design tokens and existing components before searching for new ones.
-5. If a component is missing, follow `../ui-design/references/component-retrieval.md`: shortlist first, fetch source only for the winner.
-6. Build the phone layout from task priority, not by stacking every desktop card.
-7. Verify phone portrait, keyboard-open forms, long content, offline/error states, and at least one larger mobile/tablet width where relevant.
+3. When references exist, use the `design-synthesis` skill: inspect 2-4 meaningfully different products and assign them separate jobs (navigation/structure, interaction, density, interruption model, visual language) instead of copying one app end-to-end.
+4. Read `../ui-design/references/mobile.md` for mobile-specific constraints and slop tells.
+5. Reuse the project's design tokens and existing components before searching for new ones.
+6. If a component is missing, follow `../ui-design/references/component-retrieval.md`: shortlist first, fetch source only for the winner.
+7. Build the phone layout from task priority, not by stacking every desktop card.
+8. Verify phone portrait, keyboard-open forms, long content, offline/error states, and at least one larger mobile/tablet width where relevant.
+
+## Multi-reference mobile synthesis
+
+References should contribute **decisions**, not whole screens. A useful split is:
+
+- reference A: navigation and primary task hierarchy
+- reference B: interaction/state transitions
+- reference C: list/detail density or information disclosure
+- optional reference D: visual language only
+
+Normalize the result into one project grammar: one spacing scale, one radius system, one icon family, one motion language, one set of states. Never ship a screen where the header looks like one app, the cards another, and the bottom sheet a third.
+
+For Android-first products, Android behavior wins even if an iOS reference looks better. Keep system back semantics, safe/system bars, keyboard behavior, permissions, touch expectations, and platform navigation coherent. Borrow visual ideas separately from interaction semantics.
 
 ## Non-negotiables
 
@@ -48,4 +62,4 @@ Mobile is not a breakpoint. Treat it as a different operating environment: one h
 
 Do not invent a generic mobile layout from memory. Use the nearest archetype as a structural prior, then adapt it to the user's task. A dispatcher, field-worker app, messaging client, healthcare chart, shopping app, and mobile admin tool should not converge on the same card feed.
 
-For visual direction, token generation, typography, motion, and rendered audits, also load the `ui-design` skill.
+For visual direction, token generation, typography, motion, and rendered audits, also load the `ui-design` skill. For multi-reference work, load `design-synthesis` before implementation.

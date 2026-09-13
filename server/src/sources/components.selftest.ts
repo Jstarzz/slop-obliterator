@@ -12,10 +12,14 @@ const indexes: Record<string, unknown> = {
     items: [
       { name: 'button', type: 'registry:ui', description: 'button control' },
       { name: 'card', type: 'registry:ui', description: 'plain card' },
+      { name: 'dashboard-shell', type: 'registry:block', description: 'analytics workspace shell' },
     ],
   },
   'magicui.design': {
-    items: [{ name: 'magic-card', type: 'registry:ui', description: 'spotlight animated card' }],
+    items: [
+      { name: 'magic-card', type: 'registry:ui', description: 'spotlight animated card' },
+      { name: 'command-palette', type: 'registry:component', description: 'keyboard command palette' },
+    ],
   },
   'kokonutui.com': {
     items: [{ name: 'card-flip', type: 'registry:component', description: 'animated flip card' }],
@@ -74,6 +78,12 @@ try {
   assert(ids.includes('shadcn:magicui:magic-card'), 'Magic UI is searched by default');
   assert(ids.includes('shadcn:kokonutui:card-flip'), 'KokonutUI is searched by default');
   assert(ids.includes('shadcn:reactbits:TiltedCard-TS-TW'), 'React Bits is searchable by default');
+
+  const globallyRanked = await directory.search('command palette', undefined, 1);
+  assert(
+    globallyRanked[0]?.id === 'shadcn:magicui:command-palette',
+    'a stronger match from a later registry must outrank weaker earlier-registry matches',
+  );
 
   await directory.search('button', 'ui', 5);
   for (const host of ['ui.shadcn.com', 'magicui.design', 'kokonutui.com', 'reactbits.dev']) {

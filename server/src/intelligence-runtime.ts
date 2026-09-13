@@ -15,6 +15,7 @@ import {
 import { registerPolishTools } from './polish/runtime.js';
 import { registerReferenceAxisTools } from './references/axes.js';
 import { registerDesignReferenceTools } from './references/design.js';
+import { registerInteractionPatternTools } from './references/patterns.js';
 import { registerReferenceSynthesisTools } from './references/synthesis.js';
 
 function toTarget(request: RuntimeAuditRequest): OpenTarget {
@@ -66,4 +67,5 @@ export function registerIntelligenceRuntimeTools(server: McpServer, driver: Play
   registerDesignReferenceTools(server);
   registerReferenceAxisTools(server);
   registerReferenceSynthesisTools(server);
+  registerInteractionPatternTools(server);
 }

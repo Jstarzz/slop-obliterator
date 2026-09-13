@@ -298,6 +298,14 @@ function registryFromId(
   return { registry: fallback, name: raw };
 }
 
+async function registryItems(registry: RegistryDescriptor): Promise<ShadcnRegistryItem[]> {
+  const root = registry.root.replace(/\/$/, '');
+  const payload = await cached(`shadcn:index:${registry.id}:${root}`, () =>
+    fetchJson<ShadcnSearchResponse | ShadcnRegistryItem[]>(`${root}/registry.json`),
+  );
+  return Array.isArray(payload) ? payload : (payload.items ?? []);
+}
+
 async function searchRegistry(
   registry: RegistryDescriptor,
   query: string,
@@ -305,14 +313,10 @@ async function searchRegistry(
   limit: number,
   totalRegistries: number,
 ): Promise<ComponentSummary[]> {
-  const root = registry.root.replace(/\/$/, '');
-  // Some registries implement q/limit server-side; others ignore them and return
-  // the full index. Always rank/filter locally so behavior is consistent.
-  const url = `${root}/registry.json?q=${encodeURIComponent(query)}&limit=${Math.max(limit, 20)}`;
-  const payload = await cached(`shadcn:index:${url}`, () =>
-    fetchJson<ShadcnSearchResponse | ShadcnRegistryItem[]>(url),
-  );
-  const items = Array.isArray(payload) ? payload : (payload.items ?? []);
+  // Registry catalogues change slowly relative to search frequency. Fetch the
+  // catalogue once per registry/TTL and rank every query locally instead of
+  // turning each q/limit combination into another network request/cache entry.
+  const items = await registryItems(registry);
   const terms = query.toLowerCase().split(/[\s,]+/).filter(Boolean);
 
   return items

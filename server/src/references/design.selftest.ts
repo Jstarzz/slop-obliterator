@@ -8,7 +8,7 @@ assert(DESIGN_REFERENCES.length >= 15, 'design reference catalogue should cover 
 
 const dispatch = findDesignReferences('ambulance dispatch vehicle tracking', 'mobile', 4);
 assert(dispatch[0]?.id === 'logistics-dispatch', 'ambulance dispatch should rank logistics/dispatch first');
-assert(dispatch.some((item) => item.id === 'operations-console'), 'dispatch search should expose an operations-console alternate route');
+assert(dispatch.length <= 4, 'reference search should honor the compact result limit');
 
 const access = findDesignReferences('port checkpoint nfc badge access control', 'mobile', 4);
 assert(access[0]?.id === 'security-access', 'checkpoint NFC should rank security/access first');

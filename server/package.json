@@ -30,8 +30,5 @@
     "@types/culori": "^4.0.1",
     "@types/node": "^26.4.0",
     "typescript": "^7.0.2"
-  },
-  "overrides": {
-    "fast-uri": "3.1.7"
   }
 }

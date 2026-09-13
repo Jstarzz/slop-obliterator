@@ -12,7 +12,7 @@ Every default in this plugin exists to force a decision at a fork where a model 
 
 **An MCP server** that renders pages in a real browser and measures them against **89 deterministic rules**, generates colour systems, searches icon/component libraries, and returns compact structural references for different product classes.
 
-**Nine skills** carrying the judgement and workflow the server can't:
+**Ten skills** carrying the judgement and workflow the server can't:
 
 | Skill | Job |
 |---|---|

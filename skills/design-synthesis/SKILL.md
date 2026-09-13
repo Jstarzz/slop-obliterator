@@ -19,12 +19,13 @@ Read `../ui-design/references/reference-synthesis.md` for the full workflow.
 4. Call `reference_expand` only for finalists. Do not expand the whole catalogue.
 5. Inspect any external visual/product references the user supplied. They may influence visual language, density, or a specific interaction, but they do not automatically become the structural reference.
 6. Extract at most three decisions from each reference. Assign each decision to one track: structure, interaction, density, visual language, mobile behavior, or domain convention.
-7. Write a 5-8 bullet synthesis contract before implementation. It must say which reference contributes what and what remains original to this product.
-8. Resolve contradictory reference choices explicitly; never blend them by accident.
-9. Search components only for missing capabilities. Shortlist 3-5 summaries, fetch only 1-2 finalists, and normalize them into the project's tokens and icon family.
-10. Build one coherent interface grammar. Imported components must not retain foreign radii, spacing, typography, colours, shadows, icon weights, or motion.
-11. Verify the result does not reproduce one source's major-region order/proportions or distinctive surface treatment.
-12. Run the normal `ui-design` / `mobile-ui` audits and critique pass.
+7. Call `reference_contract` with 2-5 non-overlapping role assignments. It deliberately rejects duplicate roles and reference soup. Use the returned contract as the implementation boundary.
+8. Add any project-specific visual-language/density decisions to that contract; those may come from user-supplied references rather than the structural catalogue.
+9. Resolve contradictory reference choices explicitly; never blend them by accident.
+10. Search components only for missing capabilities. Shortlist 3-5 summaries, fetch only 1-2 finalists, and normalize them into the project's tokens and icon family.
+11. Build one coherent interface grammar. Imported components must not retain foreign radii, spacing, typography, colours, shadows, icon weights, or motion.
+12. Verify the result does not reproduce one source's major-region order/proportions or distinctive surface treatment.
+13. Run the normal `ui-design` / `mobile-ui` audits and critique pass.
 
 ## Good synthesis
 
@@ -43,7 +44,8 @@ The result should not look like any one reference. It should behave as though so
 - copy branded illustrations, wording, icon motifs, or exact layout proportions
 - use different references solely because their colours differ
 - treat heuristic axis scores as objective quality ratings or probabilities
+- assign two references the same role without deciding which one wins
 
 ## Token rule
 
-Reference research is a bounded phase. Query compact structural summaries first, axis-rank only the plausible set, expand 2-4 finalists, extract at most three decisions each, and fetch component source only for the selected 1-2 implementations. Stop researching once every synthesis-contract bullet has evidence.
+Reference research is a bounded phase. Query compact structural summaries first, axis-rank only the plausible set, expand 2-4 finalists, extract at most three decisions each, commit roles with `reference_contract`, and fetch component source only for the selected 1-2 implementations. Stop researching once every synthesis-contract bullet has evidence.

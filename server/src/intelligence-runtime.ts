@@ -15,6 +15,7 @@ import {
 import { registerPolishTools } from './polish/runtime.js';
 import { registerReferenceAxisTools } from './references/axes.js';
 import { registerDesignReferenceTools } from './references/design.js';
+import { registerReferenceSynthesisTools } from './references/synthesis.js';
 
 function toTarget(request: RuntimeAuditRequest): OpenTarget {
   const provided = [request.url, request.file, request.html].filter((value) => value !== undefined);
@@ -64,4 +65,5 @@ export function registerIntelligenceRuntimeTools(server: McpServer, driver: Play
   registerPolishTools(server, driver);
   registerDesignReferenceTools(server);
   registerReferenceAxisTools(server);
+  registerReferenceSynthesisTools(server);
 }

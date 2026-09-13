@@ -12,16 +12,20 @@ Every default in this plugin exists to force a decision at a fork where a model 
 
 **An MCP server** that renders pages in a real browser and measures them against **89 deterministic rules**, generates colour systems, and searches icon and component libraries.
 
-**Six skills** carrying the judgement and workflow the server can't:
+**Eight skills** carrying the judgement and workflow the server can't:
 
 | Skill | Job |
 |---|---|
 | `ui-design` | Aesthetic direction, colour, type, layout, motion, states, mockups |
+| `mobile-ui` | Touch-first/mobile structure, platform behavior, keyboard/offline states, mobile anti-slop |
 | `critique` | Full review: 89 rules plus the 11 judgements no detector can make |
 | `grill` | Interrogates a brief until it's specific enough to build without guessing |
 | `write-human` | Strips the measurable tells of generated prose |
 | `code-clean` | Prevents the specific failure modes of generated code |
+| `code-smells` | Focused diagnosis of concurrency, data, frontend, DB, testing, security, and performance smells |
 | `agent-workflow` | Narrow-context implementation, specialist review gates, and independent outcome verification |
+
+The UI skill also ships compact references for **15 product archetypes** (operations, CRM, healthcare, finance, dispatch, security, developer tools, BI, CMS, commerce, social, support, field work, and more), plus a token-budgeted component/icon retrieval workflow. The point is not to copy templates; it is to stop every product from converging on the same dashboard/card layout.
 
 **Four specialist agents** for independent review rather than implementer self-certification:
 
@@ -37,6 +41,8 @@ Every default in this plugin exists to force a decision at a fork where a model 
 ### Where the patterns come from
 
 The taxonomy draws on [Impeccable's published catalog](https://impeccable.style/slop) (Apache-2.0), [UIZZE's anti-ui-slop skill](https://uizze.com), and [Anthropic's frontend-design skill](https://github.com/anthropics/skills/tree/main/skills/frontend-design). Detection here is an independent implementation against rendered pages — no rule code was copied.
+
+Mobile guidance follows the same rule as the desktop detector: prefer task structure and platform behavior over fashionable surface patterns. Product archetypes are intentionally structural (dominant object, user loop, component families, failure mode), so they can guide web or native implementations without importing a visual template.
 
 Impeccable is a mature tool in its own right with 23 commands and a CLI; if you want a second opinion in CI, `npx impeccable detect` is worth running alongside this.
 
@@ -122,7 +128,11 @@ Restart the app after editing.
 | `contrast_check` | Ratio + OKLCH ΔL per pair, and the nearest passing shade when one fails |
 | `judge_color` | Flags signature hexes, the indigo/violet band, and chroma too low to be an accent |
 | `icon_find` | ~7000 Tabler + Lucide icons, offline, ranked |
-| `component_find` / `component_fetch` | Uiverse, SmoothUI, and any shadcn-schema registry |
+| `component_find` / `component_fetch` | Uiverse, SmoothUI, and shadcn-schema registries |
+
+`component_find` treats registry indexes as reference data: the catalogue is cached by registry source for the session TTL and query ranking/filtering happens locally. Different searches therefore reuse the same downloaded index instead of creating one network/cache entry per `q=` value. Fetch full component source only after choosing a finalist.
+
+For shadcn-managed projects, honor the project's configured icon library rather than importing another set just because the MCP indexes Lucide and Tabler. Current shadcn projects can select/migrate among multiple icon libraries; `icon_find` is primarily semantic discovery when the project's final family differs.
 
 ### What the auditor actually measures
 
@@ -145,9 +155,13 @@ Each finding has a stable id (`visual.side-tab-border`, `type.icon-tile-above-he
 
 Generated design in 2026 converges on three looks, and **two of them pass every rule**: near-black with one acid accent, and broadsheet-with-hairlines. Only cream-and-terracotta is detectable. That is why `/critique` exists and why the skill leads with naming a direction rather than with the rule list.
 
+Mobile has the same limitation in a different form: a structurally wrong app can still pass CSS-level checks. `mobile-ui` handles judgement that needs task context — navigation hierarchy, keyboard behavior, interruption/offline flow, sheet vs screen choice, reachability, and whether a desktop information architecture was merely stacked into a phone.
+
 ### Token cost
 
 Published benchmarks put a naive browser MCP at ~114k tokens for a ten-step task, almost all of it raw page snapshots. This server measures in the page and judges in Node, so the model only sees the conclusion — an audit is a few hundred tokens. Screenshots are opt-in for the same reason.
+
+The component workflow follows the same rule: search returns compact summaries, then source is fetched only for the selected item. App-archetype references are selected one at a time rather than loading the entire catalogue into context.
 
 The agent workflow follows the same rule: reviewers receive changed symbols/files and acceptance criteria, not whole-repository or whole-conversation dumps.
 
@@ -157,9 +171,9 @@ The agent workflow follows the same rule: reviewers receive changed symbols/file
 
 **The browser is behind a seam.** `src/browser/driver.ts` defines the interface; `playwright.ts` implements it. Nothing else in the server imports Playwright. Swapping to CDP, `agent-browser`, or whatever ships next year touches one file.
 
-**Component sources are adapters.** Each is one object implementing `ComponentSource`. Adding a registry or fixing one whose API moved is a local change.
+**Component sources are adapters.** Each is one object implementing `ComponentSource`. Adding a registry or fixing one whose API moved is a local change. Registry catalogues are cached by source/root rather than by search query, so repeated searches are local ranking work after the first fetch.
 
-**Icons resolve from local packages, not a CDN.** No network round-trip mid-loop, no outage taking the tool down, and the version is pinned in the lockfile.
+**Icons resolve from local packages, not a CDN.** No network round-trip mid-loop, no outage taking the tool down, and the version is pinned in the lockfile. The bundled search index uses Tabler and Lucide; shadcn projects should still honor their configured project icon library.
 
 **Contrast uses WCAG 2.2 plus OKLCH ΔL, not APCA.** APCA is the better perceptual model, but its reference implementation ships under a restricted "Limited W3 License" with patents pending, which cannot be vendored into an MIT tool. The pairing catches most of what WCAG 2 gets wrong — the tools warn when a pair passes the ratio but has a lightness delta under 0.28.
 
@@ -171,7 +185,9 @@ The agent workflow follows the same rule: reviewers receive changed symbols/file
 
 ## Testing
 
-`npm test` runs `selftest.js`. Three things matter in it:
+`npm test` runs `selftest.js` plus the component-source, intelligence, and polish selftests. The component-source selftest verifies that multiple different searches reuse each registry catalogue instead of refetching it.
+
+Three things matter in the design-rule selftest:
 
 1. **A clean baseline that produces zero findings.** Every rule has to stay silent on a page where nothing is wrong, or the per-rule assertions mean nothing.
 2. **A fixture per rule, proving it fires.** All 89.
@@ -179,7 +195,7 @@ The agent workflow follows the same rule: reviewers receive changed symbols/file
 
 No browser required, so it runs in CI on Node 20 and 22.
 
-`npm run smoke` renders two real pages through Playwright and asserts the collector actually produces those signals from rendered CSS — which fixtures cannot prove. It checks 26 specific rule ids fire on the slop page and stay silent on the designed one.
+`npm run smoke` renders real pages through Playwright, including the template-signature regression cases, and asserts the collector actually produces those signals from rendered CSS — which fixtures cannot prove.
 
 The designed page in that test deliberately avoids all three current defaults. Using cream-and-terracotta there would have made the test lie.
 

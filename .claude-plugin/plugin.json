@@ -1,6 +1,6 @@
 {
   "name": "slop-obliterator",
-  "version": "0.2.0",
+  "version": "0.3.0",
   "description": "Kills AI-slop output across UI, prose, and code with deterministic rendered audits, structural design planning, craft profiles, component/icon retrieval, and bounded Figma + Playwright evidence workflows.",
   "author": {
     "name": "Josiah Davis"

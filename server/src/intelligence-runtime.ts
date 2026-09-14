@@ -13,6 +13,11 @@ import {
   type RuntimeAuditResult,
 } from './intelligence.js';
 import { registerPolishTools } from './polish/runtime.js';
+import { registerReferenceAxisTools } from './references/axes.js';
+import { registerDesignReferenceTools } from './references/design.js';
+import { registerInteractionPatternTools } from './references/patterns.js';
+import { registerDesignPlanTool } from './references/plan.js';
+import { registerReferenceSynthesisTools } from './references/synthesis.js';
 
 function toTarget(request: RuntimeAuditRequest): OpenTarget {
   const provided = [request.url, request.file, request.html].filter((value) => value !== undefined);
@@ -60,4 +65,9 @@ export function registerIntelligenceRuntimeTools(server: McpServer, driver: Play
     runAudit: (request) => runAudit(driver, request),
   });
   registerPolishTools(server, driver);
+  registerDesignReferenceTools(server);
+  registerReferenceAxisTools(server);
+  registerDesignPlanTool(server);
+  registerReferenceSynthesisTools(server);
+  registerInteractionPatternTools(server);
 }

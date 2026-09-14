@@ -12,10 +12,14 @@ const indexes: Record<string, unknown> = {
     items: [
       { name: 'button', type: 'registry:ui', description: 'button control' },
       { name: 'card', type: 'registry:ui', description: 'plain card' },
+      { name: 'dashboard-shell', type: 'registry:block', description: 'analytics workspace shell' },
     ],
   },
   'magicui.design': {
-    items: [{ name: 'magic-card', type: 'registry:ui', description: 'spotlight animated card' }],
+    items: [
+      { name: 'magic-card', type: 'registry:ui', description: 'spotlight animated card' },
+      { name: 'command-palette', type: 'registry:component', description: 'keyboard command palette' },
+    ],
   },
   'kokonutui.com': {
     items: [{ name: 'card-flip', type: 'registry:component', description: 'animated flip card' }],
@@ -42,12 +46,15 @@ const details: Record<string, unknown> = {
   },
 };
 
+const registryFetches = new Map<string, number>();
+
 globalThis.fetch = (async (input: string | URL | Request) => {
   const url = new URL(typeof input === 'string' ? input : input instanceof URL ? input.href : input.url);
   const key = url.host;
 
   let payload: unknown;
   if (url.pathname.endsWith('/registry.json')) {
+    registryFetches.set(key, (registryFetches.get(key) ?? 0) + 1);
     payload = indexes[key];
   } else {
     const name = url.pathname.split('/').pop();
@@ -72,6 +79,20 @@ try {
   assert(ids.includes('shadcn:kokonutui:card-flip'), 'KokonutUI is searched by default');
   assert(ids.includes('shadcn:reactbits:TiltedCard-TS-TW'), 'React Bits is searchable by default');
 
+  const globallyRanked = await directory.search('command palette', undefined, 1);
+  assert(
+    globallyRanked[0]?.id === 'shadcn:magicui:command-palette',
+    'a stronger match from a later registry must outrank weaker earlier-registry matches',
+  );
+
+  await directory.search('button', 'ui', 5);
+  for (const host of ['ui.shadcn.com', 'magicui.design', 'kokonutui.com', 'reactbits.dev']) {
+    assert(
+      registryFetches.get(host) === 1,
+      `${host} registry catalogue should be fetched once and reused across different searches`,
+    );
+  }
+
   const magic = await directory.get('shadcn:magicui:magic-card');
   assert(magic.license === 'MIT', 'Magic UI license is preserved');
   assert(magic.code.includes('MagicCard'), 'fetchable MIT registry source is returned');
@@ -88,6 +109,11 @@ try {
   const custom = makeShadcnSource();
   const customResults = await custom.search('private', undefined, 5);
   assert(customResults[0]?.id === 'shadcn:private-card', 'single custom registry preserves legacy id shape');
+  await custom.search('card', 'component', 5);
+  assert(
+    registryFetches.get('registry.example.test') === 1,
+    'custom registry catalogue should also be reused across different searches',
+  );
   const privateCard = await custom.get('shadcn:private-card');
   assert(privateCard.code.includes('PrivateCard'), 'custom registry remains fetchable');
 

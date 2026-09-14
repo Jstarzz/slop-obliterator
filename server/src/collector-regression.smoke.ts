@@ -91,6 +91,38 @@ try {
   assert(!suppressedIds.has('type.eyebrow-label'), 'disabling hero pill must not reveal the legacy eyebrow alias');
   assert(!suppressedIds.has('type.oversized-hero-headline'), 'disabling paired CTA must not reveal the legacy oversized-headline alias');
 
+  const marketingSlop = await measure(`<!doctype html><html><body>
+    <main>
+      <h1>The future of project management is here</h1>
+      <p>In today's fast-paced world, teams need software that keeps up.</p>
+      <p>Automate the busywork so you can focus on what matters most.</p>
+      <p>Whether you're a solo founder or a growing enterprise, the platform adapts to you.</p>
+      <p>Ready to take the next step?</p>
+    </main>
+  </body></html>`);
+  const marketingIds = new Set(analyze(marketingSlop, 'desktop').findings.map((finding) => finding.id));
+  assert(marketingIds.has('copy.ai-throat-clearing'), 'generic AI scene-setting should be detected');
+  assert(marketingIds.has('copy.future-is-here'), 'future-is-here cliché should be detected');
+  assert(marketingIds.has('copy.focus-on-what-matters'), 'focus-on-what-matters filler should be detected');
+  assert(marketingIds.has('copy.whether-you-are'), 'whether-you-are audience sweep should be detected');
+  assert(marketingIds.has('copy.ready-to-cta'), 'canned ready-to CTA should be detected');
+
+  const marketingSuppressed = analyze(marketingSlop, 'desktop', {
+    disabled: new Set([
+      'copy.ai-throat-clearing',
+      'copy.future-is-here',
+      'copy.focus-on-what-matters',
+      'copy.whether-you-are',
+      'copy.ready-to-cta',
+    ]),
+  });
+  const marketingSuppressedIds = new Set(marketingSuppressed.findings.map((finding) => finding.id));
+  assert(!marketingSuppressedIds.has('copy.ai-throat-clearing'), 'AI throat-clearing signature should respect ignore_rules');
+  assert(!marketingSuppressedIds.has('copy.future-is-here'), 'future-is-here signature should respect ignore_rules');
+  assert(!marketingSuppressedIds.has('copy.focus-on-what-matters'), 'focus-on-what-matters signature should respect ignore_rules');
+  assert(!marketingSuppressedIds.has('copy.whether-you-are'), 'whether-you-are signature should respect ignore_rules');
+  assert(!marketingSuppressedIds.has('copy.ready-to-cta'), 'ready-to CTA signature should respect ignore_rules');
+
   const nearMissPage = await measure(`<!doctype html><html><head><style>
     body { margin: 0; font-family: Georgia, serif; }
     .hero { text-align: center; padding: 72px 24px; }
@@ -104,12 +136,19 @@ try {
       <h1>A deliberate product page</h1>
       <div class="actions"><a href="#one">One</a><a href="#two">Two</a><a href="#three">Three</a></div>
       <p>Trusted by teams around the world.</p>
+      <p>Today we shipped export controls for finance teams. The future release will add audit logs.</p>
+      <p>Choose a workspace, invite the people who need access, then publish when the review is complete.</p>
     </section></main>
   </body></html>`);
   const nearMissIds = new Set(analyze(nearMissPage, 'desktop').findings.map((finding) => finding.id));
   assert(!nearMissIds.has('type.hero-pill-badge'), 'plain pre-heading text must not count as a pill badge');
   assert(!nearMissIds.has('layout.paired-hero-ctas'), 'three hero actions must not match the exact paired-CTA signature');
   assert(!nearMissIds.has('copy.canned-social-proof'), 'unquantified customer language must not match quantified social proof');
+  assert(!nearMissIds.has('copy.ai-throat-clearing'), 'ordinary present-tense prose must not match AI throat-clearing');
+  assert(!nearMissIds.has('copy.future-is-here'), 'literal discussion of a future release must not match future-is-here copy');
+  assert(!nearMissIds.has('copy.focus-on-what-matters'), 'concrete task prose must not match focus-on-what-matters filler');
+  assert(!nearMissIds.has('copy.whether-you-are'), 'ordinary audience instructions must not match the audience sweep');
+  assert(!nearMissIds.has('copy.ready-to-cta'), 'direct instructions must not match canned CTA questions');
 
   console.log('collector regression smoke passed');
 } finally {

@@ -6,6 +6,14 @@
       "env": {
         "SLOP_ARTIFACT_DIR": "C:/dev/mcp/slop-obliterator/.slop-artifacts"
       }
+    },
+    "figma": {
+      "type": "http",
+      "url": "https://mcp.figma.com/mcp"
+    },
+    "playwright": {
+      "command": "npx",
+      "args": ["-y", "@playwright/mcp@0.0.80", "--isolated"]
     }
   }
 }

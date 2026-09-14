@@ -1,57 +1,57 @@
 ---
 name: design-research
-description: Use when choosing a design system, component source, UI primitive library, motion library, structural reference, interaction pattern, or reference implementation before building a UI. Triggers on requests for "design systems", "component libraries", "UI inspiration", "React Bits", "Magic UI", "KokonutUI", "Primer", "Carbon", "Radix", "what should I build this with", comparing app designs, and when ui-design needs raw material beyond the built-in component search. Chooses sources by job, stack, accessibility needs, license, and whether the source is authoritative or merely inspiration.
+description: Use when choosing structural references, interaction patterns, design systems, component sources, UI primitives, Figma context, or external implementation references before building a UI. Chooses the smallest useful source by job, stack, accessibility, license, and token cost instead of shotgun-searching libraries.
 ---
 
 # Design source research
 
-Do not search component libraries as if they are interchangeable bags of JSX. Choose the source based on what decision you are trying to make.
+Research should reduce uncertainty, not create an inspiration landfill.
 
-Read `references/sources.md` for the curated source matrix. For multi-reference composition, also use the `design-synthesis` skill.
+## Fast path
+
+For a new product surface or meaningful redesign, start with:
+
+```text
+design_plan(query: "product + primary task + audience + constraints", platform: "web|mobile")
+```
+
+`design_plan` returns a bounded bundle:
+
+- craft profile: surface mode + design variance / motion intensity / visual density;
+- role-specific structural reference candidates;
+- interaction-pattern shortlist;
+- evidence routing for Figma, Playwright, and deterministic audits.
+
+Use `craft_profile` alone when structure is already known and the missing decision is craft/density/motion rather than information architecture.
 
 ## Source hierarchy
 
 Use the highest-authority source that answers the question:
 
-1. **The project's own design contract and components** - existing product decisions beat external taste.
-2. **Structural reference routes** - call `reference_find` with the product + primary task. It returns a few compact app structures without loading screenshots or a giant catalogue. Expand only shortlisted routes with `reference_expand`.
-3. **Interaction-pattern decisions** - call `pattern_find` once the repeated task and information shape are understood. Choose the smallest useful pattern (master-detail, exception queue, map+dock, table, timeline, wizard, checklist, etc.) before browsing implementation libraries.
-4. **Official design-system MCP/docs** - when the project uses Primer, Carbon, shadcn, or another established system, query its current source of truth rather than guessing APIs from memory.
-5. **Accessible primitives** - use low-level libraries such as Radix when you need interaction semantics and composability more than a finished visual language.
-6. **Curated component registries** - use the MCP's `component_find` for installable raw material. Adapt it into the project's tokens and direction.
-7. **Expressive/motion libraries** - use these to solve a specific interaction or visual moment, not to decorate every section.
-8. **External visual references** - learn hierarchy/composition/pattern decisions; do not copy branding or exact layouts.
+1. **User brief and product requirements** — explicit intent wins.
+2. **Existing product/code truth** — behavior, tokens, components, `DESIGN.md`.
+3. **Figma MCP** — when a Figma frame/design system is authoritative: variables, components, layout, assets, Code Connect.
+4. **Structural references** — `reference_find`, `reference_rank_axes`, `reference_expand`.
+5. **Interaction patterns** — `pattern_find`, `pattern_expand`.
+6. **Official design systems/docs** — when the project actually uses that system.
+7. **Accessible primitives / project registries** — implementation capability.
+8. **External visual references** — composition and visual-language evidence, never a clone target.
 
-## Fast path: one compact planning call
+Do not jump from "dashboard" or "CRM" straight to cards/components.
 
-For a new product surface, prefer `design_plan` before issuing separate structural and interaction searches. It performs the deterministic part of the research loop in one bounded call: ranks references by synthesis role, prefers different references for different jobs when plausible, and returns a short interaction-pattern shortlist.
+## Structural synthesis
 
-```text
-design_plan(query: "port checkpoint nfc verification offline Android", platform: "mobile")
-design_plan(query: "ambulance dispatch exception triage map", platform: "web")
-```
+Use `reference_find` only when you need to inspect alternatives beyond `design_plan`. Compare 2–4 routes and assign different jobs: domain convention, structure, interaction, components, mobile behavior.
 
-Use its output as a research plan, not as permission to skip judgement. Inspect only the role finalists you actually need, then commit the chosen non-overlapping roles with `reference_contract`. `design_plan` deliberately does not choose visual style, branding, or an end-to-end source to clone.
+Use `reference_rank_axes` when several routes are plausible. Its scores are heuristics, not probabilities.
 
-Use the lower-level `reference_find`, `reference_rank_axes`, and `pattern_find` tools directly when you need to inspect or challenge one part of the plan.
+Commit the chosen jobs with `reference_contract` before implementation. Duplicate roles are rejected deliberately: reference soup is not synthesis.
 
-## Structural reference search
+Expand only finalists with `reference_expand`.
 
-`reference_find` is intentionally smaller than visual web research. Query by product and task, not style:
+## Interaction patterns
 
-```text
-reference_find(query: "ambulance dispatch exception handling", platform: "mobile", limit: 4)
-reference_find(query: "port checkpoint nfc access verification", platform: "mobile", limit: 4)
-reference_find(query: "developer infrastructure logs incident triage", platform: "web", limit: 4)
-```
-
-It searches 15+ compact archetypes and returns structure, interactions, useful component families, and anti-patterns. Compare 2-4 routes for different jobs, then use `design-synthesis`; do not treat the top result as a template.
-
-Only call `reference_expand` for finalists. Empty queries deliberately return nothing so an agent cannot accidentally dump the entire reference catalogue into context.
-
-## Interaction pattern search
-
-After the broad structure is chosen, query the actual repeated task:
+Choose the smallest pattern that matches the information/action shape:
 
 ```text
 pattern_find(query: "operators triage exceptions then inspect one without losing queue context", platform: "web", limit: 4)
@@ -59,72 +59,59 @@ pattern_find(query: "field inspection checklist evidence offline resume", platfo
 pattern_find(query: "vehicle map selection route context", platform: "mobile", limit: 4)
 ```
 
-Patterns are decision cards, not components. They say when the pattern fits, what information shape it expects, what interactions must exist, when not to use it, and how it adapts to mobile. Use `pattern_expand` only for a finalist. Do not combine several patterns merely because they all scored reasonably well.
+Patterns are decision cards, not components. They define use-when, shape, interactions, avoid-when, and mobile adaptation. Expand one finalist; do not combine several merely because they all ranked well.
 
-## Built-in registry directory
+## Figma research
 
-`component_find(source: "shadcn")` searches these shadcn-schema registries in parallel by default:
+Load `figma-handoff` when Figma is in play.
 
-- shadcn/ui
-- Magic UI
-- KokonutUI
-- React Bits
+Pull the exact frame/node needed. Prefer variables, components, assets, and Code Connect over screenshot imitation. Compare Figma primitives with the existing codebase before generating new components. If Figma and runtime behavior disagree, report the conflict rather than silently choosing.
 
-Results are ranked locally by name/title/description so registries that return their whole index behave consistently with registries that support server-side query parameters.
+## Component retrieval
 
-`component_fetch` can proxy source from the MIT registries. React Bits is **searchable but intentionally not proxied** because its current MIT + Commons Clause terms allow use but restrict redistribution of the components themselves. Install/fetch React Bits directly from upstream instead.
+Only search components after structure and interaction are resolved.
 
-`SLOP_REGISTRY_URL` still switches `source: "shadcn"` to one custom shadcn-schema registry for teams with an internal component system.
+`component_find(source: "shadcn")` searches the configured shadcn-schema sources and ranks candidates globally across registries. Registry catalogues are cached by source/root; repeated queries rank locally instead of refetching indexes.
 
-## How to choose
+Default retrieval budget:
 
-Before selecting a source, establish:
+- one structural plan;
+- one pattern shortlist;
+- one component-family query;
+- 3–5 summaries;
+- fetch at most 1–2 finalists;
+- 3–6 icon candidates.
 
-- **Stack** - React/Next, plain HTML/CSS, another framework?
-- **Job** - primitive behavior, full design language, motion, visual texture, data-dense application UI, marketing surface?
-- **Identity** - are you adopting the source's visual language or only borrowing implementation raw material?
-- **Accessibility** - does the source provide semantics/keyboard/focus behavior, or are you responsible for rebuilding it?
-- **Dependency budget** - does one animation drag in Three.js/GSAP/WebGL for a screen that did not need them?
-- **License** - can the code be copied/redistributed, or should the agent direct-install it from upstream?
+Preference order:
 
-Then search one or two sources that fit. Do not shotgun every library and dump 80 results into context.
+1. existing project component;
+2. existing primitive composed differently;
+3. current design-system primitive;
+4. registry component;
+5. custom implementation.
 
-## Retrieval rules
+For shadcn-managed projects, honor `components.json` and its configured icon library. `icon_find` is semantic discovery, not permission to mix families.
 
-- Start with `design_plan` for a new product surface when the domain + primary task are known.
-- Drop to `reference_find` / `reference_rank_axes` when you need to inspect structural alternatives manually.
-- Use `pattern_find` before component search when the information architecture is known but the interaction shape is not.
-- Start with `component_find` only when the missing capability is already known.
-- Query components by the interaction/problem: `command palette`, `animated tabs`, `data table density`, `hero background`, not vague `cool component`.
-- Fetch only the top few candidates.
-- Inspect dependencies before choosing. A visually tiny component can have a large runtime cost.
-- Treat fetched code as raw material. Replace its colors, radii, spacing, type, and icon assumptions with the active design system.
-- Honor the project's configured icon family; use `icon_find` for semantic discovery, not as permission to mix icon systems.
-- Run `audit_design` after integration. Third-party polish does not make the surrounding page coherent automatically.
-- For library APIs that change quickly, use current version-specific docs (Context7 or equivalent when available) before implementing around memory.
+## Browser research
+
+Load `browser-qa` when runtime behavior is the unknown.
+
+- use Playwright MCP for navigation, keyboard/focus, overlays, forms, state transitions and reproduction;
+- use `audit_design` / `audit_responsive` for compact deterministic rendered measurements;
+- use screenshots only when visual judgement remains unresolved.
+
+Do not use Playwright MCP accessibility snapshots as a substitute for a deterministic audit, and do not use screenshots as a substitute for interaction verification.
+
+## External design lineages
+
+`design-craft` contains an original compact synthesis informed by Emil Kowalski's interaction-craft work, Impeccable's quality/surface discipline, and Taste Skill's variance/motion/density dials. Use the synthesis for routing and project decisions; consult upstream sources only when deeper source-specific guidance is actually needed.
 
 ## Avoid
 
-- mixing five component libraries because each had one pretty demo
-- adopting a full enterprise design system for one button
-- copying a distinctive marketing component unchanged and calling that product identity
-- adding Three.js, GSAP, or a large motion dependency for incidental decoration
-- proxying or vendoring source whose license restricts redistribution
-- treating a design-system MCP as a style generator; it is a source of truth for that system
-- loading an entire reference catalogue when a four-result structural shortlist answers the question
-- jumping from "CRM" or "dashboard" straight to cards without selecting the interaction pattern
-- treating `design_plan` as an end-to-end template selector; it is a bounded decision aid
-
-## Handoff
-
-When recommending raw material, return:
-
-```text
-Source: library/design system/reference route
-Why: the specific job it solves
-Integration: registry/MCP/package/direct reference
-Dependencies: important runtime additions
-License: relevant constraint
-Adapt: what must change to fit this product
-Verify: rendered/a11y/perf check to run after integration
-```
+- dumping an entire Figma file or component registry into context;
+- mixing several design systems because each has one attractive demo;
+- selecting a reference by overall score and cloning it end-to-end;
+- using external visual inspiration to override product behavior;
+- fetching component source before the interaction job is known;
+- using Playwright MCP for static facts a compact audit already measures;
+- treating higher design variance or motion intensity as inherently better.

@@ -14,6 +14,7 @@ import {
 } from './intelligence.js';
 import { registerPolishTools } from './polish/runtime.js';
 import { registerReferenceAxisTools } from './references/axes.js';
+import { registerCraftProfileTool } from './references/craft.js';
 import { registerDesignReferenceTools } from './references/design.js';
 import { registerInteractionPatternTools } from './references/patterns.js';
 import { registerDesignPlanTool } from './references/plan.js';
@@ -67,6 +68,7 @@ export function registerIntelligenceRuntimeTools(server: McpServer, driver: Play
   registerPolishTools(server, driver);
   registerDesignReferenceTools(server);
   registerReferenceAxisTools(server);
+  registerCraftProfileTool(server);
   registerDesignPlanTool(server);
   registerReferenceSynthesisTools(server);
   registerInteractionPatternTools(server);

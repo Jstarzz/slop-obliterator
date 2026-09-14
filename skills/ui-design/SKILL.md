@@ -1,131 +1,159 @@
 ---
 name: ui-design
-description: Use when building, redesigning, or reviewing any user interface — web pages, app screens, components, dashboards, landing pages, design systems, or mockups. Triggers on "build a UI", "make this look better", "design a page", "it looks like AI made it", "generic", "slop", requests for colour palettes, typography, layout, spacing, or design tokens, and on any front-end work where appearance matters. Produces interfaces that read as designed rather than defaulted, and verifies the result in a real browser instead of assuming.
+description: Use when building, redesigning, or reviewing any user interface — web pages, app screens, components, dashboards, landing pages, design systems, or mockups. Triggers on "build a UI", "make this look better", "design a page", "it looks like AI made it", "generic", "slop", requests for colour palettes, typography, layout, spacing, or design tokens, and on front-end work where appearance matters. Produces interfaces that read as designed rather than defaulted and verifies the result in a real browser.
 ---
 
-# UI design that doesn't read as machine-default
+# UI design that does not read as machine-default
 
-## The problem you are solving
+Generated UI fails when the model reaches an undecided fork and fills it with the statistical average. Your job is not to make the average prettier. Your job is to make the decision.
 
-A language model predicts the most probable next token. For code that is a strength. For design it is fatal, because the most probable choice is the average of everything the model has seen, and the average of web design since 2019 is Tailwind's `indigo-500`, Inter, and three rounded cards in a row.
+## Route the task first
 
-That output is not ugly. It is anonymous, which is worse: a visitor cannot tell it apart from the last four products they looked at. Every finding in this skill traces back to the same root cause — **a decision that nobody made, filled in with a default.**
+Load only the specialist skills that match the job:
 
-Your job is to make the decision.
+- `design-research` + `design-synthesis` for a new surface or structural redesign.
+- `design-craft` for visual variance, density, motion, micro-interaction and quality-floor decisions.
+- `mobile-ui` for touch-first/native/mobile work.
+- `figma-handoff` when a Figma file/frame/selection is source truth or the result must go back to Figma.
+- `browser-qa` whenever runtime browser behavior matters.
+- `critique` for judgement that deterministic rules cannot make.
 
-## The one rule
+Do not make every UI request load every skill.
 
-> Before writing a single line of UI, name the aesthetic direction out loud, in the conversation, and commit to it.
+## 1. Decide before components
 
-Not "clean and modern." That is the average wearing a disguise. Name something a person could disagree with:
+For a new or meaningfully redesigned surface, call `design_plan` with the product, primary user task, audience, platform, and hard constraints. It returns:
 
-- "1970s ski lodge: burnt orange, avocado, warm browns, chunky slab serif."
-- "Bloomberg terminal: near-black, phosphor green, monospace everywhere, information-dense, zero rounded corners."
-- "Swiss pharmaceutical packaging: white, one red, Helvetica-adjacent grotesque, strict grid, enormous margins."
+- a craft profile: surface mode plus variance/motion/density dials;
+- role-specific structural references;
+- an interaction-pattern shortlist;
+- Figma/Playwright evidence routing.
 
-If you cannot name it, read `references/directions.md` and pick one. Twelve are catalogued there with their palettes, typefaces, and layout logic. Picking one at random beats defaulting every time.
+Use the output as a compact hypothesis. Commit the reference roles with `reference_contract` before implementation. Choose the smallest interaction pattern that fits the repeated task before browsing component libraries.
 
-State the direction, then hold it. Re-state it in a comment at the top of the stylesheet so it survives the next edit.
+For a narrow refinement where the existing product already has clear structure, skip structural research and call `craft_profile` only if the craft direction is unclear.
 
-## Workflow
+## 2. Name one coherent direction
 
-### 1. Decide before you build
+Before writing meaningful UI, be able to state:
 
-Answer these in the conversation. If the user has not said, either ask (use the `grill` skill for anything non-trivial) or state your assumption explicitly so it can be corrected.
+- **surface mode** — persuade, operate, read, or experience;
+- **primary loop** — what the user repeatedly does;
+- **hierarchy** — what dominates the first viewport;
+- **density** — sparse/editorial vs dense/operational;
+- **type stance** — not merely a font name, but scale/weight/voice;
+- **color strategy** — neutral ground + semantic/accent role;
+- **edge language** — square/hairline/soft/physical/etc.;
+- **motion budget** — which interactions deserve motion and which should be instant;
+- **state model** — loading, empty, error, partial, disabled, long content, permissions;
+- **icon family** — one family consistent with the project.
 
-- **Direction** — the named aesthetic, per above.
-- **Density** — spacious/editorial, or dense/operational? This one decision sets spacing, type size, and radius scale.
-- **Light or dark first** — which one gets designed properly, not just inverted?
-- **Emotional register** — should the user feel calm, urgent, curious, safe, powerful?
-- **The one thing** — what is the single most important element on the screen? Everything else is subordinate to it.
+"Clean and modern" is not a direction.
 
-### 2. Generate the token layer first
+## 3. Respect source truth
 
-Never write hex values by hand. Call `design_system` on the MCP server with a seed drawn from something real — a material, a place, a photograph, a book cover. It returns OKLCH ramps with eased lightness, a chroma bell curve, hue shift across each ramp, tinted neutrals, and every semantic pair verified against WCAG AA. It refuses indigo/violet seeds unless you override.
+Use evidence in this order:
 
-```
-design_system(seed: "#9a3412", intensity: "balanced", modes: ["light","dark"])
-```
+1. User brief and product requirements.
+2. Existing production behavior.
+3. Existing code components/tokens and `DESIGN.md`.
+4. Figma variables/components/Code Connect when Figma is authoritative.
+5. The explicit reference contract and selected interaction pattern.
+6. External visual references.
+7. Inferred craft preferences.
 
-Use the emitted `@theme` block (Tailwind v4) or custom properties directly. Components reference semantic tokens — `--app-primary`, `--app-text-muted` — never raw ramp steps and never literals.
+A reference does not outrank the product. A Figma frame does not erase runtime states. A generated component does not outrank an existing semantic primitive.
 
-Full colour reasoning: `references/color.md`.
+## 4. Build the token layer deliberately
 
-### 3. Build
+When the project lacks an authoritative token system, call `design_system` with a seed that belongs to the chosen direction. Use the emitted semantic tokens rather than scattering literals.
 
-Work through `references/typography.md`, `references/layout-space.md`, `references/states.md`, and `references/motion.md`. The short version:
+Do not generate a new palette when the project or Figma already provides one. Do not import a second icon family because `icon_find` found a convenient glyph.
 
-- **Type**: two faces with different skeletons. Weight extremes (300 vs 800), not 400 vs 600. Scale ratio ≥3× top to bottom. Body copy capped at `65ch`.
-- **Layout**: asymmetry beats symmetry. Vary the rhythm. Never three equal cards in a row with an icon and a heading.
-- **Space**: one 4px-based scale, ~8 steps, exposed as tokens. Space communicates grouping — proximity does more work than borders.
-- **States**: every interactive element needs rest, hover, active, `:focus-visible`, disabled, loading. Every data surface needs empty, loading, error, and partial. This is where generated UI fails hardest.
-- **Motion**: one well-orchestrated entrance with staggered delays beats a dozen scattered micro-interactions. Always guard with `prefers-reduced-motion`.
+`component_find` is for missing implementation capabilities, not inspiration dumping. Existing project component -> existing primitive composed differently -> project design-system primitive -> registry component -> custom implementation.
 
-Icons: call `icon_find` (Tabler and Lucide, offline, ~7000 icons, consistent 24/2px/currentColor). Never mix icon sets with different stroke weights — that mismatch is visible instantly.
+Fetch full source for finalists only.
 
-Components: `component_find` searches three sources. **uiverse** — ~3000 MIT community CSS/Tailwind elements, good for texture and detail you would not think to write. **smoothui** — motion-driven React components built on Motion, for when a layout needs a real interaction rather than another static card. **shadcn** — any shadcn-schema registry, including your own via `SLOP_REGISTRY_URL`.
+## 5. Craft details by frequency and purpose
 
-Treat every result as raw material to rebuild inside your own system. Copying a component wholesale imports someone else's decisions, which is how you end up with a page that is well made and still belongs to nobody.
+Use `design-craft` for the full reasoning. The short version:
 
-References beat invention. Before designing a screen type you have not built before, look at real ones — [uizze.com](https://uizze.com) has a free browsable catalogue of real web and iOS screens. Extract the structural decisions (hierarchy, density, control placement, what the empty state does), then rebuild them here. Never copy branding, copy, or exact layout.
+- Frequent expert actions should be instant or extremely restrained.
+- Motion must explain state, space, feedback, or a rare moment.
+- Avoid `transition: all`, gratuitous bounce, perpetual loops, and slow entrances.
+- Press/focus/hover/disabled/loading states are part of component feel, not cleanup.
+- Popovers should feel connected to their trigger; modal/dialog behavior should remain spatially coherent and keyboard-correct.
+- Density follows the task. An operations console is not a landing page stacked into cards.
+- Refinement preserves identity; redesign replaces the visual world deliberately.
 
-### 4. Look at it
+## 6. Mobile is a different information problem
 
-**This step is not optional and it is the reason this skill exists.** You cannot tell whether a design works by reading its source.
+Do not squeeze desktop into 390px. Load `mobile-ui` and decide what the phone is for.
 
-```
-audit_design(file: "/abs/path/index.html", viewport: "desktop", design_md: "DESIGN.md")
-audit_responsive(url: "http://localhost:3000", viewports: ["mobile","tablet","desktop"])
-```
+At minimum verify:
 
-89 deterministic rules run against the rendered page — palette in OKLCH, type scale, spacing grid, side-tab borders, icon tiles, eyebrow labels, nested cards, glassmorphism, gradient text, marquees, bounce easing, copy tells, contrast, focus rings, tap targets, form states, motion guards, landmarks. Each finding names the element and the fix. A few hundred tokens, so run it after every meaningful change. `list_rules` shows the full catalogue.
+- back/navigation semantics;
+- safe area and fixed chrome;
+- keyboard-open forms;
+- touch targets and one-handed repeated actions;
+- long content and localization;
+- offline/retry/interruption when relevant;
+- larger phone/tablet/foldable behavior when the product will run there.
 
-Two scores come back. **Quality** is whether it is well built. **Slop-free** is whether it reads as designed rather than defaulted. They move independently — a page can be flawlessly built and completely anonymous.
+## 7. Verify with the correct browser tool
 
-Pass `design_md` whenever the project has a design contract. It enables four drift rules that catch fonts, colours, radii, and type sizes outside your own system.
+Load `browser-qa` for meaningful UI work.
 
-Fix every `BLOCK`. Fix every `MAJOR` or say out loud why you are not. Re-run until clean.
+Use `audit_design` / `audit_responsive` for compact deterministic evidence: rendered layout, type, color, spacing, overflow, contrast, targets, states, landmarks, motion rules and slop signatures.
 
-`capture` exists for when you genuinely need to see pixels, but the audit answers most questions for a fraction of the cost. Do not screenshot by reflex.
+Use Playwright MCP for behavior: navigation, keyboard/focus, overlays, forms, route transitions, loading/error/network states, browser permissions/storage, and reproducing interaction bugs.
 
-### 5. Self-critique before you hand it over
+Use screenshots only when the unresolved question is actually visual.
 
-Load the `critique` skill, or run `references/critique.md` directly. Eleven questions the detector cannot answer, and the honest answer to at least one of them is usually "no."
+For meaningful edits, do one batched inspect/fix pass and at most one confirmation pass. Endless polishing is not craft.
 
-The failure mode to watch for: **passing every rule and still being anonymous.** Two of the three looks generated design currently converges on — near-black with an acid accent, and broadsheet-with-hairlines — clear the whole detector. Only cream-and-terracotta gets flagged. See the top of `references/directions.md`.
+## 8. Figma workflows
+
+When Figma is involved, load `figma-handoff`.
+
+- Pull the exact frame/node, not the whole file.
+- Reuse variables, components and Code Connect mappings.
+- Map to existing code components before generating replacements.
+- Implement the states/responsiveness a static frame cannot show.
+- Verify the runtime result with Playwright and rendered audits.
+- When sending live UI back to Figma, capture meaningful states rather than only the prettiest default screen.
 
 ## Non-negotiables
 
-These are correctness, not taste. Never ship without them.
-
 | Requirement | Standard |
 |---|---|
-| Text contrast | 4.5:1 body, 3:1 for ≥24px or ≥18.66px bold |
-| Control boundaries and focus rings | 3:1 against adjacent colour (WCAG 1.4.11) |
-| Focus indicator | Visible `:focus-visible` on every interactive element, 2px min, with offset |
-| Tap targets | ≥24×24 CSS px (WCAG 2.2 SC 2.5.8); 44×44 on touch |
-| Form fields | Programmatic label, visible required marker, inline error with `role="alert"`, HTML validation attributes |
-| Motion | Wrapped in `prefers-reduced-motion: no-preference`, or neutralised in a `reduce` block |
-| Images | `alt` present (empty if decorative), `width`/`height` or `aspect-ratio` set |
-| Structure | One `h1`, no level skips, `main`/`nav`/`header`/`footer` landmarks, skip link |
-| Keyboard | Full operation without a mouse; visible focus order matching visual order |
-
-## Making mockups
-
-When the user wants options rather than an implementation, read `references/mockups.md`. The short version: produce **three genuinely different directions**, not three shades of the same one — a model asked for variations will otherwise return the same layout in three palettes. Each mockup is a single self-contained HTML file, audited before it is shown.
+| Text contrast | 4.5:1 body; 3:1 for large/bold text |
+| Focus | Visible `:focus-visible`, logical order, no keyboard traps |
+| Touch targets | WCAG minimum; target roughly 44x44 for repeated touch actions |
+| Forms | Programmatic labels, visible errors, usable keyboard/input modes |
+| Motion | Reduced-motion handling and no essential information conveyed only by animation |
+| Images | Appropriate alt text and stable sizing/aspect ratio |
+| Structure | Clear heading/landmark hierarchy and keyboard-reachable primary actions |
+| States | Loading, empty, error, partial/permission/disabled where the domain requires them |
 
 ## Reference files
 
+Use these on demand rather than loading all of them:
+
 | File | Read it when |
 |---|---|
-| `references/slop-tells.md` | Diagnosing why something looks generated; full catalogue of tells |
-| `references/directions.md` | Choosing an aesthetic direction; twelve worked-out options |
-| `references/color.md` | Palette, OKLCH, contrast, dark mode, semantic colour |
-| `references/typography.md` | Typeface choice, pairings, scale, measure, the banned list |
-| `references/layout-space.md` | Grid, rhythm, spacing scale, hierarchy, page flow |
-| `references/states.md` | Interaction states, empty/loading/error, forms, accessibility |
-| `references/motion.md` | Animation principles plus Motion, anime.js, and CSS recipes |
-| `references/critique.md` | The eleven-question self-review |
-| `references/mockups.md` | Producing multiple design directions |
+| `references/slop-tells.md` | Diagnosing generated-looking UI |
+| `references/directions.md` | Choosing a visual direction |
+| `references/color.md` | Palette, OKLCH, contrast, dark mode |
+| `references/typography.md` | Typeface, scale, measure, hierarchy |
+| `references/layout-space.md` | Grid, rhythm, spacing, hierarchy |
+| `references/states.md` | Interaction/data/form states |
+| `references/motion.md` | Motion implementation details |
+| `references/mobile.md` | Mobile-specific anti-slop and platform behavior |
+| `references/app-archetypes.md` | Structural product archetypes |
+| `references/reference-synthesis.md` | Multi-reference composition |
+| `references/component-retrieval.md` | Token-efficient component/icon search |
+| `references/critique.md` | Judgement checks after deterministic audit |
+| `references/mockups.md` | Multiple genuinely divergent directions |
 
-Related skills: `critique` for a full review pass, `grill` for pinning down an underspecified brief before any of this starts.
+The target is not "looks impressive." The target is a coherent product surface whose structure, visual language, behavior, and evidence all agree.

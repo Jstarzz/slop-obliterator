@@ -2,6 +2,7 @@ import type { McpServer } from '@modelcontextprotocol/sdk/server/mcp.js';
 import { z } from 'zod';
 
 import { rankReferenceAxes, type ReferenceAxis, type ReferenceAxisScores } from './axes.js';
+import { buildCraftProfile, type CraftMode, type CraftProfile } from './craft.js';
 import { findInteractionPatterns } from './patterns.js';
 
 export type DesignPlanPlatform = 'web' | 'mobile' | 'any';
@@ -15,6 +16,7 @@ export interface DesignPlanRole {
 export interface DesignPlanResult {
   roles: DesignPlanRole[];
   patterns: string[];
+  craft: CraftProfile;
 }
 
 function relevantRoles(platform: DesignPlanPlatform): ReferenceAxis[] {
@@ -60,6 +62,7 @@ export function buildDesignPlan(
   return {
     roles: proposeDesignRoles(ranked, platform),
     patterns: patterns.map((pattern) => pattern.id),
+    craft: buildCraftProfile(query, platform),
   };
 }
 
@@ -70,14 +73,18 @@ export function registerDesignPlanTool(server: McpServer): void {
       title: 'Build a compact design decision plan',
       description:
         'Collapses deterministic design research into one bounded call: ranks structural references by synthesis role, ' +
-        'prefers different references for different jobs, and shortlists interaction patterns. Use it at the start of a new ' +
-        'surface when you want a compact plan before reference_contract and component_find. It does not choose visual style ' +
-        'or clone a source; the final reference contract remains an explicit implementation boundary.',
+        'prefers different references for different jobs, shortlists interaction patterns, and adds a craft profile covering ' +
+        'motion/detail discipline, surface quality, variance/motion/density controls, and Figma/Playwright evidence routing. ' +
+        'Use it at the start of a new surface before reference_contract and component_find.',
       inputSchema: {
-        query: z.string().min(1).describe('Product + primary task + constraints, e.g. "port checkpoint NFC verification offline Android".'),
+        query: z.string().min(1).describe('Product + primary task + audience + constraints, e.g. "port checkpoint NFC verification offline Android".'),
         platform: z.enum(['web', 'mobile', 'any']).default('any'),
         referenceLimit: z.number().int().min(2).max(8).default(5),
         patternLimit: z.number().int().min(1).max(6).default(4),
+        mode: z.enum(['auto', 'persuade', 'operate', 'read', 'experience']).default('auto'),
+        designVariance: z.number().int().min(1).max(10).optional(),
+        motionIntensity: z.number().int().min(1).max(10).optional(),
+        visualDensity: z.number().int().min(1).max(10).optional(),
       },
     },
     async (args) => {
@@ -90,6 +97,11 @@ export function registerDesignPlanTool(server: McpServer): void {
 
       const roles = proposeDesignRoles(ranked, args.platform);
       const patterns = findInteractionPatterns(args.query, args.platform, args.patternLimit);
+      const craft = buildCraftProfile(args.query, args.platform, args.mode as CraftMode | 'auto', {
+        designVariance: args.designVariance,
+        motionIntensity: args.motionIntensity,
+        visualDensity: args.visualDensity,
+      });
       const roleLines = roles.map((entry) => `  ${entry.role}: ${entry.referenceId} (${entry.score})`);
       const patternLines = patterns.map((pattern) =>
         `  ${pattern.id}: ${pattern.useWhen[0] ?? pattern.name}; avoid when ${pattern.avoidWhen[0] ?? 'the information shape does not fit'}`,
@@ -97,6 +109,11 @@ export function registerDesignPlanTool(server: McpServer): void {
 
       const body = [
         'Compact design plan — heuristic scores are not probabilities.',
+        '',
+        `Craft: ${craft.mode} | variance ${craft.dials.designVariance}/10 | motion ${craft.dials.motionIntensity}/10 | density ${craft.dials.visualDensity}/10`,
+        `  motion/detail: ${craft.kowalski[0]}`,
+        `  quality floor: ${craft.impeccable[0]}`,
+        `  evidence: ${craft.evidence.join(' ')}`,
         '',
         'Reference roles:',
         ...roleLines,

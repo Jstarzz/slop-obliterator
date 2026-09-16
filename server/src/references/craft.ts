@@ -98,29 +98,26 @@ export function buildCraftProfile(
   const mode = requestedMode === 'auto' ? inferCraftMode(query) : requestedMode;
   const dials = inferCraftDials(query, mode, platform, overrides);
 
+  // Keep these arrays deliberately short: craft_profile and design_plan are
+  // routing contracts, not essays. Deeper guidance lives in the skill files.
   const kowalski = [
     'Animate only when motion explains state, space, feedback, or a rare moment; frequent expert actions should be instant or nearly instant.',
-    'Prefer responsive entrances and interruptible motion; never hide latency behind sluggish easing or animate every interaction by reflex.',
-    'Polish trigger relationships, press feedback, transform origins, perceived performance, and the small states people feel before they notice them.',
+    'Polish trigger relationships, press feedback, transform origins and perceived performance before adding more motion.',
   ];
 
   const impeccable = [
-    `Design for the surface mode (${mode}), not for a generic product category. The brief and incumbent product truth outrank fashionable defaults.`,
-    'Treat refinement and redesign differently: preserve identity during refinement; replace the visual world deliberately during redesign instead of splitting the difference.',
-    'Build the full state model, responsive behavior, accessibility, typography, spacing, copy, and performance floor before decorative flourish.',
-    'Verify in bounded passes: one batched inspection/fix pass, at most one confirmation pass, then stop polishing.',
+    `Design for the surface mode (${mode}); the brief and incumbent product truth outrank fashionable defaults.`,
+    'Complete states, responsive behavior, accessibility and performance before decorative flourish; verify in one bounded fix pass plus one confirmation pass.',
   ];
 
   const taste = [
-    `Use the dials as bias controls: variance ${dials.designVariance}/10, motion ${dials.motionIntensity}/10, density ${dials.visualDensity}/10.`,
-    'Infer the direction from page kind, audience, references, brand assets, and trust constraints before choosing a visual language.',
-    'Do not translate a style reference into a clone. Extract the decisions that fit this product, then normalize them to the project system.',
+    `Bias controls: variance ${dials.designVariance}/10, motion ${dials.motionIntensity}/10, density ${dials.visualDensity}/10.`,
+    'Infer direction from the brief and references, then normalize chosen decisions into the project system instead of cloning a style source.',
   ];
 
   const evidence = [
-    'If Figma context exists, use the connected Figma MCP for variables, components, layout, assets, and Code Connect before inventing equivalents in code.',
-    'Use Playwright MCP for exploratory interaction, keyboard, focus, dialogs, network/state transitions, and reproducing browser behavior.',
-    'Use slop-obliterator audit_design/audit_responsive for compact deterministic rendered measurements; use screenshots only when pixel judgement is actually needed.',
+    'Use optional Figma MCP only when Figma is source truth; pull the exact node/variables/components needed, not the whole file.',
+    'Use optional Playwright MCP only for behavior; use audit_design/audit_responsive first for compact rendered measurements and screenshots only for unresolved pixel judgement.',
   ];
 
   return { mode, dials, kowalski, impeccable, taste, evidence };
@@ -131,16 +128,13 @@ function formatProfile(profile: CraftProfile): string {
     `Craft profile — mode: ${profile.mode}`,
     `Dials: variance ${profile.dials.designVariance}/10 | motion ${profile.dials.motionIntensity}/10 | density ${profile.dials.visualDensity}/10`,
     '',
-    'Kowalski craft lens:',
+    'Interaction craft:',
     ...profile.kowalski.map((line) => `  - ${line}`),
-    '',
-    'Impeccable quality floor:',
+    'Quality floor:',
     ...profile.impeccable.map((line) => `  - ${line}`),
-    '',
-    'Taste bias controls:',
+    'Taste controls:',
     ...profile.taste.map((line) => `  - ${line}`),
-    '',
-    'Evidence routing:',
+    'Evidence:',
     ...profile.evidence.map((line) => `  - ${line}`),
   ].join('\n');
 }
@@ -149,11 +143,8 @@ export function registerCraftProfileTool(server: McpServer): void {
   server.registerTool(
     'craft_profile',
     {
-      title: 'Build a design craft profile',
-      description:
-        'Returns a compact design-quality contract that combines Emil Kowalski-style interaction craft, Impeccable-style surface/quality discipline, ' +
-        'Taste-style variance/motion/density bias controls, and explicit Figma/Playwright evidence routing. Use before implementation or a serious redesign; ' +
-        'it complements structural design_plan rather than replacing it.',
+      title: 'Build a compact design craft profile',
+      description: 'Returns surface mode, variance/motion/density dials, a short craft contract, and bounded evidence routing.',
       inputSchema: {
         query: z.string().min(1).describe('Surface + audience + task + constraints.'),
         platform: z.enum(['web', 'mobile', 'any']).default('any'),

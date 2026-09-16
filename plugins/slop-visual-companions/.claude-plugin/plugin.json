@@ -1,0 +1,33 @@
+{
+  "name": "slop-visual-companions",
+  "version": "0.4.0",
+  "description": "Opt-in visual evidence companions for slop-obliterator. Adds Figma context and Playwright behavior testing without making every core session pay their MCP schema and response cost.",
+  "author": {
+    "name": "Josiah Davis"
+  },
+  "license": "MIT",
+  "keywords": [
+    "figma",
+    "playwright",
+    "browser-qa",
+    "visual-testing",
+    "token-efficient"
+  ],
+  "mcpServers": {
+    "figma": {
+      "type": "http",
+      "url": "https://mcp.figma.com/mcp"
+    },
+    "playwright": {
+      "command": "npx",
+      "args": [
+        "-y",
+        "@playwright/mcp@0.0.80",
+        "--isolated",
+        "--snapshot-mode=none",
+        "--image-responses=omit",
+        "--codegen=none"
+      ]
+    }
+  }
+}

@@ -1,6 +1,6 @@
 ---
 name: design-research
-description: Use when choosing structural references, interaction patterns, design systems, component sources, UI primitives, Figma context, or external implementation references before building a UI. Chooses the smallest useful source by job, stack, accessibility, license, and token cost instead of shotgun-searching libraries.
+description: Use when choosing structural references, interaction patterns, design systems, component sources, UI primitives, Figma context, or external implementation references before building a UI. Chooses the smallest useful source by job, stack, accessibility, license, runtime cost, and token cost instead of shotgun-searching libraries.
 ---
 
 # Design source research
@@ -15,103 +15,98 @@ For a new product surface or meaningful redesign, start with:
 design_plan(query: "product + primary task + audience + constraints", platform: "web|mobile")
 ```
 
-`design_plan` returns a bounded bundle:
-
-- craft profile: surface mode + design variance / motion intensity / visual density;
-- role-specific structural reference candidates;
-- interaction-pattern shortlist;
-- evidence routing for Figma, Playwright, and deterministic audits.
-
 Use `craft_profile` alone when structure is already known and the missing decision is craft/density/motion rather than information architecture.
+
+If the remaining question is **which external frontend skill/library/MCP to use**, load `design-resource-router`. Do not manually open five overlapping upstream skills.
 
 ## Source hierarchy
 
 Use the highest-authority source that answers the question:
 
-1. **User brief and product requirements** — explicit intent wins.
-2. **Existing product/code truth** — behavior, tokens, components, `DESIGN.md`.
-3. **Figma MCP** — when a Figma frame/design system is authoritative: variables, components, layout, assets, Code Connect.
-4. **Structural references** — `reference_find`, `reference_rank_axes`, `reference_expand`.
-5. **Interaction patterns** — `pattern_find`, `pattern_expand`.
-6. **Official design systems/docs** — when the project actually uses that system.
-7. **Accessible primitives / project registries** — implementation capability.
-8. **External visual references** — composition and visual-language evidence, never a clone target.
+1. user brief and product requirements;
+2. existing product/code truth — behavior, tokens, components, `DESIGN.md`;
+3. exact Figma node/variables/components when Figma is authoritative;
+4. structural references from the bounded design tools;
+5. one interaction pattern;
+6. official system/docs already used by the project;
+7. one accessible primitive/component source if capability is missing;
+8. one external taste/visual source only if design direction is still unresolved.
 
-Do not jump from "dashboard" or "CRM" straight to cards/components.
+Do not jump from "dashboard" or "CRM" straight to a component buffet.
+
+## Retrieval budget
+
+For a focused UI task, default to:
+
+- one `design_plan` or `craft_profile` call;
+- 2-4 structural candidates only if the plan is insufficient;
+- one interaction-pattern shortlist;
+- one component-family query;
+- 3-5 component summaries;
+- full source for at most 1-2 finalists;
+- 3-6 icon candidates;
+- zero screenshots unless pixels answer an unresolved question.
+
+External resource budget: **1-3 sources total**. Use 4 only for a broad redesign where each source owns a non-overlapping job such as direction, implementation, motion, and verification.
 
 ## Structural synthesis
 
-Use `reference_find` only when you need to inspect alternatives beyond `design_plan`. Compare 2–4 routes and assign different jobs: domain convention, structure, interaction, components, mobile behavior.
+Use `reference_find` only when alternatives beyond `design_plan` are needed. Assign different jobs: domain convention, structure, interaction, components, mobile behavior.
 
-Use `reference_rank_axes` when several routes are plausible. Its scores are heuristics, not probabilities.
+Use `reference_rank_axes` when several routes are plausible. Scores are heuristics, not probabilities. Commit chosen jobs with `reference_contract`; duplicate roles are rejected deliberately because reference soup is not synthesis.
 
-Commit the chosen jobs with `reference_contract` before implementation. Duplicate roles are rejected deliberately: reference soup is not synthesis.
-
-Expand only finalists with `reference_expand`.
+Expand only finalists.
 
 ## Interaction patterns
 
-Choose the smallest pattern that matches the information/action shape:
+Choose the smallest pattern that matches the information/action shape. Patterns are decision cards, not components. Expand one finalist; do not combine several merely because they all ranked well.
 
-```text
-pattern_find(query: "operators triage exceptions then inspect one without losing queue context", platform: "web", limit: 4)
-pattern_find(query: "field inspection checklist evidence offline resume", platform: "mobile", limit: 4)
-pattern_find(query: "vehicle map selection route context", platform: "mobile", limit: 4)
-```
+## External resource routing
 
-Patterns are decision cards, not components. They define use-when, shape, interactions, avoid-when, and mobile adaptation. Expand one finalist; do not combine several merely because they all ranked well.
+Load `design-resource-router` when considering ThreeUI, 21st, UI/UX Pro Max, Taste Skill, Anthropic frontend-design, GSAP/Framer Motion, Vercel React/React Native guidance, Convex skills, Figma, or Playwright.
+
+Important routing rules:
+
+- ThreeUI only for genuine 3D/shader/immersive jobs; never a dashboard default.
+- Taste Skill is strongest for landing pages/portfolios/redesigns, not dense multi-step product UI.
+- UI/UX Pro Max is a knowledge/search layer; do not load it when project tokens already settle the question.
+- 21st/shadcn are component sources, not replacements for information architecture.
+- Vercel React/React Native guidance is implementation guidance, not visual direction.
+- GSAP is for real choreography; Motion/Framer is usually enough for component-state transitions.
+- Convex guidance applies only to Convex projects.
 
 ## Figma research
 
-Load `figma-handoff` when Figma is in play.
-
-Pull the exact frame/node needed. Prefer variables, components, assets, and Code Connect over screenshot imitation. Compare Figma primitives with the existing codebase before generating new components. If Figma and runtime behavior disagree, report the conflict rather than silently choosing.
+Figma is an optional companion, not a permanent context source. Pull the exact frame/node needed. Prefer variables, components, assets and Code Connect over screenshot imitation. If Figma and runtime behavior disagree, report the conflict rather than silently choosing.
 
 ## Component retrieval
 
-Only search components after structure and interaction are resolved.
-
-`component_find(source: "shadcn")` searches the configured shadcn-schema sources and ranks candidates globally across registries. Registry catalogues are cached by source/root; repeated queries rank locally instead of refetching indexes.
-
-Default retrieval budget:
-
-- one structural plan;
-- one pattern shortlist;
-- one component-family query;
-- 3–5 summaries;
-- fetch at most 1–2 finalists;
-- 3–6 icon candidates.
+`component_find(source: "shadcn")` searches configured shadcn-schema sources and ranks candidates globally. Repeated queries reuse cached registry metadata.
 
 Preference order:
 
 1. existing project component;
 2. existing primitive composed differently;
 3. current design-system primitive;
-4. registry component;
+4. one registry component;
 5. custom implementation.
 
 For shadcn-managed projects, honor `components.json` and its configured icon library. `icon_find` is semantic discovery, not permission to mix families.
 
 ## Browser research
 
-Load `browser-qa` when runtime behavior is the unknown.
+Start with `audit_design` / `audit_responsive` for compact deterministic rendered measurements.
 
-- use Playwright MCP for navigation, keyboard/focus, overlays, forms, state transitions and reproduction;
-- use `audit_design` / `audit_responsive` for compact deterministic rendered measurements;
-- use screenshots only when visual judgement remains unresolved.
+Use the optional Playwright companion for behavior only: navigation, keyboard/focus, overlays, forms, state transitions and bug reproduction. Its low-output default suppresses automatic snapshots/image responses/codegen; explicitly request visual evidence when necessary.
 
-Do not use Playwright MCP accessibility snapshots as a substitute for a deterministic audit, and do not use screenshots as a substitute for interaction verification.
-
-## External design lineages
-
-`design-craft` contains an original compact synthesis informed by Emil Kowalski's interaction-craft work, Impeccable's quality/surface discipline, and Taste Skill's variance/motion/density dials. Use the synthesis for routing and project decisions; consult upstream sources only when deeper source-specific guidance is actually needed.
+Do not use screenshots as a substitute for interaction verification and do not use browser snapshots as a substitute for deterministic measurements.
 
 ## Avoid
 
-- dumping an entire Figma file or component registry into context;
+- dumping an entire Figma file, registry, skill collection, or browser snapshot stream into context;
+- loading Anthropic frontend-design + Taste + UI/UX Pro Max simultaneously without distinct jobs;
 - mixing several design systems because each has one attractive demo;
 - selecting a reference by overall score and cloning it end-to-end;
-- using external visual inspiration to override product behavior;
 - fetching component source before the interaction job is known;
-- using Playwright MCP for static facts a compact audit already measures;
+- keeping ThreeUI/WebGL in a normal application bundle for decorative novelty;
 - treating higher design variance or motion intensity as inherently better.

@@ -1,52 +1,53 @@
 ---
 name: ui-design
-description: Use when building, redesigning, or reviewing any user interface — web pages, app screens, components, dashboards, landing pages, design systems, or mockups. Triggers on "build a UI", "make this look better", "design a page", "it looks like AI made it", "generic", "slop", requests for colour palettes, typography, layout, spacing, or design tokens, and on front-end work where appearance matters. Produces interfaces that read as designed rather than defaulted and verifies the result in a real browser.
+description: Use when building, redesigning, or reviewing any user interface — web pages, app screens, components, dashboards, landing pages, design systems, or mockups. Triggers on "build a UI", "make this look better", "design a page", "it looks like AI made it", "generic", "slop", requests for colour palettes, typography, layout, spacing, or design tokens, and on front-end work where appearance matters. Produces interfaces that read as designed rather than defaulted and verifies the result with bounded evidence.
 ---
 
 # UI design that does not read as machine-default
 
-Generated UI fails when the model reaches an undecided fork and fills it with the statistical average. Your job is not to make the average prettier. Your job is to make the decision.
+Generated UI fails when an undecided fork gets filled with the statistical average. Make the decision; do not merely decorate the average.
 
-## Route the task first
+## Route first, then keep the context small
 
-Load only the specialist skills that match the job:
+Load only specialists that materially change the work:
 
 - `design-research` + `design-synthesis` for a new surface or structural redesign.
-- `design-craft` for visual variance, density, motion, micro-interaction and quality-floor decisions.
+- `design-craft` for variance, density, motion, micro-interaction and quality-floor decisions.
+- `design-resource-router` only when choosing among external skills/libraries/MCPs such as ThreeUI, 21st, Taste, UI/UX Pro Max, Vercel React/React Native, GSAP, Figma, or Playwright.
 - `mobile-ui` for touch-first/native/mobile work.
-- `figma-handoff` when a Figma file/frame/selection is source truth or the result must go back to Figma.
-- `browser-qa` whenever runtime browser behavior matters.
-- `critique` for judgement that deterministic rules cannot make.
+- `figma-handoff` only when Figma is actual source truth.
+- `browser-qa` only when runtime browser behavior matters.
+- `critique` only for judgement deterministic rules cannot answer.
 
-Do not make every UI request load every skill.
+Do **not** load every design skill or MCP on every UI task. Default external-resource budget is 1-3 sources. An overlap is not a composition.
 
 ## 1. Decide before components
 
-For a new or meaningfully redesigned surface, call `design_plan` with the product, primary user task, audience, platform, and hard constraints. It returns:
+For a new or meaningfully redesigned surface, call `design_plan` with product, primary user task, audience, platform and hard constraints. It returns a compact hypothesis:
 
-- a craft profile: surface mode plus variance/motion/density dials;
+- surface mode and variance/motion/density dials;
 - role-specific structural references;
 - an interaction-pattern shortlist;
-- Figma/Playwright evidence routing.
+- evidence routing.
 
-Use the output as a compact hypothesis. Commit the reference roles with `reference_contract` before implementation. Choose the smallest interaction pattern that fits the repeated task before browsing component libraries.
+Commit only the reference roles that matter before implementation. Choose the smallest interaction pattern that fits the repeated task before browsing component libraries.
 
-For a narrow refinement where the existing product already has clear structure, skip structural research and call `craft_profile` only if the craft direction is unclear.
+For a narrow refinement where the existing product already has clear structure, skip structural research and use `craft_profile` only if the craft direction is unclear.
 
 ## 2. Name one coherent direction
 
-Before writing meaningful UI, be able to state:
+Before meaningful UI work, be able to state:
 
-- **surface mode** — persuade, operate, read, or experience;
-- **primary loop** — what the user repeatedly does;
-- **hierarchy** — what dominates the first viewport;
-- **density** — sparse/editorial vs dense/operational;
-- **type stance** — not merely a font name, but scale/weight/voice;
-- **color strategy** — neutral ground + semantic/accent role;
-- **edge language** — square/hairline/soft/physical/etc.;
-- **motion budget** — which interactions deserve motion and which should be instant;
-- **state model** — loading, empty, error, partial, disabled, long content, permissions;
-- **icon family** — one family consistent with the project.
+- surface mode — persuade, operate, read, or experience;
+- primary loop — what the user repeatedly does;
+- hierarchy — what dominates the first viewport;
+- density — sparse/editorial vs dense/operational;
+- type stance — scale/weight/voice, not merely a font name;
+- color strategy — neutral ground + semantic/accent role;
+- edge language — square/hairline/soft/physical/etc.;
+- motion budget — which interactions deserve motion and which should be instant;
+- state model — loading, empty, error, partial, disabled, long content, permissions;
+- icon family — one family consistent with the project.
 
 "Clean and modern" is not a direction.
 
@@ -54,35 +55,41 @@ Before writing meaningful UI, be able to state:
 
 Use evidence in this order:
 
-1. User brief and product requirements.
-2. Existing production behavior.
-3. Existing code components/tokens and `DESIGN.md`.
-4. Figma variables/components/Code Connect when Figma is authoritative.
-5. The explicit reference contract and selected interaction pattern.
-6. External visual references.
-7. Inferred craft preferences.
+1. user brief and product requirements;
+2. existing production behavior;
+3. existing code components/tokens and `DESIGN.md`;
+4. Figma variables/components/Code Connect when Figma is authoritative;
+5. explicit reference contract and chosen interaction pattern;
+6. one selected external design source when it answers a real gap;
+7. inferred craft preferences.
 
-A reference does not outrank the product. A Figma frame does not erase runtime states. A generated component does not outrank an existing semantic primitive.
+A reference does not outrank the product. A generated component does not outrank an existing semantic primitive.
 
-## 4. Build the token layer deliberately
+## 4. Retrieve, do not dump
 
-When the project lacks an authoritative token system, call `design_system` with a seed that belongs to the chosen direction. Use the emitted semantic tokens rather than scattering literals.
+When the project lacks authoritative tokens, call `design_system` with a seed that belongs to the chosen direction. Do not create a second palette when the project/Figma already has one.
 
-Do not generate a new palette when the project or Figma already provides one. Do not import a second icon family because `icon_find` found a convenient glyph.
+For implementation capability:
 
-`component_find` is for missing implementation capabilities, not inspiration dumping. Existing project component -> existing primitive composed differently -> project design-system primitive -> registry component -> custom implementation.
+```text
+existing project component
+  -> existing primitive composed differently
+  -> current design-system primitive
+  -> one registry/library candidate
+  -> custom implementation
+```
 
-Fetch full source for finalists only.
+Search summaries first. Fetch source for only 1-2 finalists. Never dump a registry or a whole component family into context.
+
+Use `design-resource-router` before reaching for specialist external sources. In particular, ThreeUI is for real 3D/shader/immersive work, not decoration on dashboards or admin surfaces.
 
 ## 5. Craft details by frequency and purpose
-
-Use `design-craft` for the full reasoning. The short version:
 
 - Frequent expert actions should be instant or extremely restrained.
 - Motion must explain state, space, feedback, or a rare moment.
 - Avoid `transition: all`, gratuitous bounce, perpetual loops, and slow entrances.
 - Press/focus/hover/disabled/loading states are part of component feel, not cleanup.
-- Popovers should feel connected to their trigger; modal/dialog behavior should remain spatially coherent and keyboard-correct.
+- Popovers should feel connected to their trigger; modal behavior must stay spatially coherent and keyboard-correct.
 - Density follows the task. An operations console is not a landing page stacked into cards.
 - Refinement preserves identity; redesign replaces the visual world deliberately.
 
@@ -90,38 +97,27 @@ Use `design-craft` for the full reasoning. The short version:
 
 Do not squeeze desktop into 390px. Load `mobile-ui` and decide what the phone is for.
 
-At minimum verify:
+At minimum verify navigation/back semantics, safe areas/fixed chrome, keyboard-open forms, touch targets, one-handed repeated actions, long/localized content, interruption/retry/offline behavior when relevant, and larger-phone/tablet/foldable behavior when applicable.
 
-- back/navigation semantics;
-- safe area and fixed chrome;
-- keyboard-open forms;
-- touch targets and one-handed repeated actions;
-- long content and localization;
-- offline/retry/interruption when relevant;
-- larger phone/tablet/foldable behavior when the product will run there.
+For React Native/Expo implementation details, route through `design-resource-router` and load the React Native specialist rather than web React guidance.
 
-## 7. Verify with the correct browser tool
+## 7. Verify with the cheapest evidence that answers the question
 
-Load `browser-qa` for meaningful UI work.
+Start with `audit_design` / `audit_responsive` for compact deterministic evidence: layout, type, color, spacing, overflow, contrast, targets, states, landmarks, motion rules and slop signatures.
 
-Use `audit_design` / `audit_responsive` for compact deterministic evidence: rendered layout, type, color, spacing, overflow, contrast, targets, states, landmarks, motion rules and slop signatures.
+Use the optional Playwright companion only for behavior: navigation, keyboard/focus, overlays, forms, route transitions, loading/error/network states, permissions/storage, and interaction bugs. Its default companion config suppresses automatic snapshots/image responses/codegen; request visual state explicitly only when needed.
 
-Use Playwright MCP for behavior: navigation, keyboard/focus, overlays, forms, route transitions, loading/error/network states, browser permissions/storage, and reproducing interaction bugs.
+Use screenshots only when the unresolved question is genuinely visual. For meaningful edits, do one batched inspect/fix pass and at most one confirmation pass. Endless polishing is not craft.
 
-Use screenshots only when the unresolved question is actually visual.
+## 8. Figma is opt-in source truth
 
-For meaningful edits, do one batched inspect/fix pass and at most one confirmation pass. Endless polishing is not craft.
-
-## 8. Figma workflows
-
-When Figma is involved, load `figma-handoff`.
+Load `figma-handoff` and the optional Figma companion only when Figma is actually involved.
 
 - Pull the exact frame/node, not the whole file.
 - Reuse variables, components and Code Connect mappings.
 - Map to existing code components before generating replacements.
-- Implement the states/responsiveness a static frame cannot show.
-- Verify the runtime result with Playwright and rendered audits.
-- When sending live UI back to Figma, capture meaningful states rather than only the prettiest default screen.
+- Implement runtime states/responsiveness a static frame cannot show.
+- Verify behavior/rendered output separately.
 
 ## Non-negotiables
 
@@ -138,22 +134,6 @@ When Figma is involved, load `figma-handoff`.
 
 ## Reference files
 
-Use these on demand rather than loading all of them:
+Read these only on demand: `references/slop-tells.md`, `directions.md`, `color.md`, `typography.md`, `layout-space.md`, `states.md`, `motion.md`, `mobile.md`, `app-archetypes.md`, `reference-synthesis.md`, `component-retrieval.md`, `critique.md`, and `mockups.md`.
 
-| File | Read it when |
-|---|---|
-| `references/slop-tells.md` | Diagnosing generated-looking UI |
-| `references/directions.md` | Choosing a visual direction |
-| `references/color.md` | Palette, OKLCH, contrast, dark mode |
-| `references/typography.md` | Typeface, scale, measure, hierarchy |
-| `references/layout-space.md` | Grid, rhythm, spacing, hierarchy |
-| `references/states.md` | Interaction/data/form states |
-| `references/motion.md` | Motion implementation details |
-| `references/mobile.md` | Mobile-specific anti-slop and platform behavior |
-| `references/app-archetypes.md` | Structural product archetypes |
-| `references/reference-synthesis.md` | Multi-reference composition |
-| `references/component-retrieval.md` | Token-efficient component/icon search |
-| `references/critique.md` | Judgement checks after deterministic audit |
-| `references/mockups.md` | Multiple genuinely divergent directions |
-
-The target is not "looks impressive." The target is a coherent product surface whose structure, visual language, behavior, and evidence all agree.
+The target is not "looks impressive." The target is a coherent product surface whose structure, visual language, behavior, and evidence all agree — without spending half the context window proving it.

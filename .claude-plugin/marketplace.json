@@ -5,13 +5,20 @@
   },
   "metadata": {
     "description": "Anti-slop tooling for AI-generated interfaces, prose, and code.",
-    "version": "0.3.0"
+    "version": "0.4.0"
   },
   "plugins": [
     {
       "name": "slop-obliterator",
       "source": "./",
-      "description": "Design auditor + taste layer that stops AI from shipping generic UI, prose, and code."
+      "description": "Token-conscious anti-slop core: deterministic design auditor, taste layer, design planning, and bounded component/icon retrieval.",
+      "version": "0.4.0"
+    },
+    {
+      "name": "slop-visual-companions",
+      "source": "./plugins/slop-visual-companions",
+      "description": "Optional Figma + Playwright MCPs for tasks that actually need design-file context or interactive browser evidence. Playwright defaults to low-output mode.",
+      "version": "0.4.0"
     }
   ]
 }
